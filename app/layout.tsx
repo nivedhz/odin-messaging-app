@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Odin messaging app",
-  description: "Odin messaging app - a simple chat app",
+  title: "Sendzy",
+  description: "Sendzy - a simple chat app",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
