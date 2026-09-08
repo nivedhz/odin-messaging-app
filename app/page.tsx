@@ -1,3 +1,9 @@
+import Hero from "@/components/Hero";
+
 export default function Home() {
-  return <h1>hello, world</h1>;
+  return (
+    <div className="relative min-h-screen max-w-screen">
+      <Hero />
+    </div>
+  );
 }
