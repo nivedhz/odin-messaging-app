@@ -2,7 +2,12 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { Send } from "lucide-react";
 
-const links = [
+interface Link {
+  href: string;
+  label: string;
+}
+
+const links: Link[] = [
   { href: "#about", label: "About" },
   { href: "#features", label: "Features" },
   { href: "#contact", label: "Contact" },
