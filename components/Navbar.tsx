@@ -24,7 +24,7 @@ const Navbar = () => {
         ))}
       </nav>
       <div className="flex gap-2">
-        <Button variant={"ghost"} className={""}>
+        <Button variant={"outline"} className={"bg-transparent"}>
           Login
         </Button>
         <Button className={"bg-[#c7baed] hover:bg-[#c7baed]/80 cursor-pointer"}>
