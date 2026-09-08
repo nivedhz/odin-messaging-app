@@ -51,7 +51,7 @@ const Hero = () => {
               </p>
             </CardContent>
           </SpotlightCard>
-          <SpotlightCard className="w-72 shadow-2xl bg-transparent animate-[float_2s_ease-in-out_infinite] flex flex-col gap-2 border-muted-foreground/20">
+          <SpotlightCard className="w-72 shadow-2xl bg-transparent animate-[float_2s_ease-in-out_infinite] flex flex-col gap-2 border-muted-foreground/20 delay-200">
             <CardHeader className="flex items-center justify-between">
               <CardTitle className="text-base">Cindrella</CardTitle>
               <CardAction>
