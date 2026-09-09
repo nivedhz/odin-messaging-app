@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,7 +9,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { signUp } from "../actions";
+import { handleSignUp } from "../actions";
+import SignUpButton from "./SignUpButton";
 
 const SignUpForm = () => {
   const inputStyles =
@@ -28,7 +28,7 @@ const SignUpForm = () => {
           </CardDescription>
         </div>
       </CardHeader>
-      <form className="group/form" action={signUp}>
+      <form className="group/form" action={handleSignUp}>
         <CardContent className="px-6 pt-6 sm:px-8">
           <div className="flex flex-col gap-5 pb-6">
             <div className="grid gap-2">
@@ -82,12 +82,7 @@ const SignUpForm = () => {
           </div>
         </CardContent>
         <CardFooter className="flex-col gap-3 border-t border-white/10 bg-white/3 px-6 py-6 sm:px-8">
-          <Button
-            type="submit"
-            className="h-11 w-full cursor-pointer rounded-xl bg-brand font-semibold text-[#1a1333] shadow-lg shadow-brand/25 transition-all hover:-translate-y-px hover:bg-[#d6cbf3] hover:shadow-xl hover:shadow-brand/35 active:translate-y-0"
-          >
-            Sign Up & Start Chatting
-          </Button>
+          <SignUpButton />
           <p className="text-center text-sm text-white/55">
             Already have an account?{" "}
             <Link
