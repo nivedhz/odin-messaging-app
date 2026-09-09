@@ -56,7 +56,7 @@ const SignUp = () => {
           grainIntensity={0.05}
           mouseInteraction={false}
         />
-        <div className="absolute inset-0 bg-linear-to-b from-black/60 via-black/30 to-black/70" />
+        <div className="absolute inset-0" />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
