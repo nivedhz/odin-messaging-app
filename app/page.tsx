@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen w-full p-4 bg-background">
+    <div className="relative min-h-screen w-full overflow-hidden">
       <div className="absolute inset-0 z-0">
         <GradientWaves
           horizonColor="#5227FF"
@@ -28,6 +28,7 @@ export default function Home() {
           grainIntensity={0.05}
           mouseInteraction={false}
         />
+        <div className="absolute inset-0" />
       </div>
       <div className="relative z-10">
         <Navbar />
