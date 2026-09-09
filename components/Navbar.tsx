@@ -11,7 +11,10 @@ const Navbar = () => {
       </h1>
       <div className="flex gap-2">
         <Link href={"login"}>
-          <Button variant={"outline"} className={"bg-transparent"}>
+          <Button
+            variant={"outline"}
+            className={"bg-transparent cursor-pointer"}
+          >
             Login
           </Button>
         </Link>
