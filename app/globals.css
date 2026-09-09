@@ -8,6 +8,8 @@
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
+  --color-brand: #c7baed;
+  --color-brand-soft: #ff9ffc;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -120,7 +122,6 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    /* outline: 1px solid red; */
     font-family:
       "Noto Sans",
       system-ui,
@@ -136,10 +137,15 @@
       sans-serif;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans scroll-smooth;
+  }
+  ::selection {
+    background: #c7baed;
+    color: #1a1333;
   }
 }
 
@@ -151,6 +157,117 @@
   }
   50% {
     transform: translateY(-15px);
-    opacity: 0.7;
+    opacity: 0.85;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.99);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes message-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px) translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes message-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px) translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(52, 211, 153, 0);
+  }
+}
+
+@keyframes gradient-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-message-left {
+    animation: message-in-left 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-message-right {
+    animation: message-in-right 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .animate-typing-dot {
+    animation: typing-bounce 1.2s infinite ease-in-out;
+  }
+  .animate-pulse-dot {
+    animation: pulse-dot 2s infinite;
+  }
+  .animate-gradient-pan {
+    background-size: 200% 200%;
+    animation: gradient-pan 6s ease infinite;
+  }
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+  .delay-700 {
+    animation-delay: 700ms;
+  }
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
+  .text-balance {
+    text-wrap: balance;
   }
 }
