@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import FloatingCard from "./FloatingCard";
+import Link from "next/link";
 
 const Hero = () => {
   return (
@@ -19,20 +20,23 @@ const Hero = () => {
                 environment, powered by Sendzy
               </p>
             </div>
-            <Button
-              className={
-                "py-5 px-5 rounded-full bg-[#c7baed] hover:bg-[#c7baed]/80 cursor-pointer"
-              }
-            >
-              Sign Up & Start Messaging
-            </Button>
+            <Link href={"sign-up"}>
+              <Button
+                className={
+                  "py-5 px-5 rounded-full bg-[#c7baed] hover:bg-[#c7baed]/80 cursor-pointer"
+                }
+              >
+                Sign Up & Start Messaging
+              </Button>
+            </Link>
           </div>
         </div>
         <div className="flex items-center justify-between min-w-full px-60">
-          <div className="transform translate-y-12.5 ">
+          <div className="transform -translate-y-82.5">
             <FloatingCard
               name="Humpty"
               message="I am sitting on a high place"
+              className="delay-1000"
             />
           </div>
           <FloatingCard
