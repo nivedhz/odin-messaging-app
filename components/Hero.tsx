@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MoveUpRight } from "lucide-react";
+import { Bell } from "lucide-react";
 
 const Hero = () => {
   return (
@@ -40,9 +40,7 @@ const Hero = () => {
             <CardHeader className="flex items-center justify-between">
               <CardTitle className="text-base">Humpty</CardTitle>
               <CardAction>
-                <Button size={"icon"}>
-                  <MoveUpRight />
-                </Button>
+                <Bell width={20} />
               </CardAction>
             </CardHeader>
             <CardContent className="">
@@ -55,9 +53,7 @@ const Hero = () => {
             <CardHeader className="flex items-center justify-between">
               <CardTitle className="text-base">Cindrella</CardTitle>
               <CardAction>
-                <Button size={"icon"}>
-                  <MoveUpRight />
-                </Button>
+                <Bell width={20} />
               </CardAction>
             </CardHeader>
             <CardContent className="">
