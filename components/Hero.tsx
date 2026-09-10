@@ -23,8 +23,8 @@ const Hero = () => {
           <div className="animate-fade-up delay-200 flex flex-col items-center gap-6">
             <div className="max-w-md text-center">
               <p className="text-sm leading-relaxed text-white/60 sm:text-base">
-                Lock your messaging potential in a fully regulated environment,
-                powered by Sendzy
+                Lock your messaging potential in a fully unregulated
+                environment, powered by Sendzy
               </p>
             </div>
             <Link href={"sign-up"}>
