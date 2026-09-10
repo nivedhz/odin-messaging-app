@@ -1,10 +1,5 @@
-import {
-  CheckCheck,
-  MessageCircle,
-  Send,
-  ShieldCheck,
-  Zap,
-} from "lucide-react";
+import TrustRow from "@/components/TrustRow";
+import { CheckCheck, MessageCircle, Send } from "lucide-react";
 
 const SignUpSidePanel = () => {
   const members = [
@@ -106,19 +101,7 @@ const SignUpSidePanel = () => {
         </div>
 
         {/* Trust row */}
-        <div className="animate-fade-up delay-300 flex flex-wrap gap-5 text-xs text-white/55">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck width={15} className="text-brand" /> Un-Encrypted by
-            default
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Zap width={15} className="text-brand" /> &gt;50ms delivery
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCheck width={15} className="text-brand" /> Read receipts &
-            reactions
-          </span>
-        </div>
+        <TrustRow />
       </div>
     </>
   );
