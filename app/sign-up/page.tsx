@@ -1,5 +1,5 @@
 import GradientWaves from "@/components/GradientWaves";
-import SignUpForm from "./components/SignUpForm";
+import SignUpForm from "@/features/auth/sign-up/components/SignUpForm";
 import {
   ArrowLeft,
   CheckCheck,
