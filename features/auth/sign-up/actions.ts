@@ -1,7 +1,7 @@
 "use server";
 
 import { signUp } from "./signup";
-import { SignUpData } from "./types";
+import { SignUpData, SignUpResponse } from "./types";
 
 const getFormInfo = (formData: FormData): SignUpData => {
   const username = formData.get("username")?.toString() ?? "";
@@ -26,8 +26,23 @@ const getFormInfo = (formData: FormData): SignUpData => {
   };
 };
 
-export async function handleSignUp(formData: FormData): Promise<void> {
+export async function handleSignUp(
+  _prevState: SignUpResponse,
+  formData: FormData,
+): Promise<SignUpResponse> {
   const { username, email, password } = getFormInfo(formData);
 
-  await signUp({ username, email, password });
+  const user = await signUp({ username, email, password });
+
+  if (!user.success) {
+    return {
+      success: false,
+      message: user.message,
+    };
+  }
+
+  return {
+    success: true,
+    message: "",
+  };
 }
