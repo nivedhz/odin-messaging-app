@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Card,
   CardContent,
@@ -8,11 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { handleSignUp } from "../actions";
 import SignUpButton from "./SignUpButton";
+import { useActionState } from "react";
 
 const SignUpForm = () => {
+  const [state, action, _pending] = useActionState(handleSignUp, {
+    success: false,
+    message: "",
+  });
   const inputStyles =
     "h-11 rounded-xl border-white/10 bg-white/5 text-white placeholder:text-white/30 transition-all focus-visible:border-[#c7baed]/60 focus-visible:ring-4 focus-visible:ring-[#c7baed]/20 hover:border-white/20";
 
@@ -28,7 +36,7 @@ const SignUpForm = () => {
           </CardDescription>
         </div>
       </CardHeader>
-      <form className="group/form" action={handleSignUp}>
+      <form className="group/form" action={action}>
         <CardContent className="px-6 pt-6 sm:px-8">
           <div className="flex flex-col gap-5 pb-6">
             <div className="grid gap-2">
@@ -80,6 +88,30 @@ const SignUpForm = () => {
               />
             </div>
           </div>
+          {state.message && (
+            <p
+              role={state.success ? "status" : "alert"}
+              aria-live="polite"
+              className={
+                state.success
+                  ? "animate-fade-up mb-6 flex items-start gap-2.5 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3.5 py-3 text-sm leading-relaxed text-emerald-200 shadow-lg shadow-emerald-950/20"
+                  : "animate-fade-up mb-6 flex items-start gap-2.5 rounded-xl border border-red-400/25 bg-red-500/10 px-3.5 py-3 text-sm leading-relaxed text-red-200 shadow-lg shadow-red-950/20"
+              }
+            >
+              {state.success ? (
+                <CheckCircle2
+                  width={17}
+                  className="mt-0.5 shrink-0 text-emerald-300"
+                />
+              ) : (
+                <AlertCircle
+                  width={17}
+                  className="mt-0.5 shrink-0 text-red-300"
+                />
+              )}
+              <span>{state.message}</span>
+            </p>
+          )}
         </CardContent>
         <CardFooter className="flex-col gap-3 border-t border-white/10 bg-white/3 px-6 py-6 sm:px-8">
           <SignUpButton />
