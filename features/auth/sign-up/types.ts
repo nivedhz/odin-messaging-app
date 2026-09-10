@@ -9,3 +9,8 @@ export interface User {
   username: string;
   email: string;
 }
+
+export interface SignUpResponse {
+  success: boolean;
+  message: string;
+}

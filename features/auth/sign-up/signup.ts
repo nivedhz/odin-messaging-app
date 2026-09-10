@@ -1,10 +1,21 @@
 import { hashPassword } from "@/lib/auth/password";
 import prisma from "@/lib/db";
-import { SignUpData, User } from "./types";
+import { SignUpData, SignUpResponse } from "./types";
 
-export async function signUp(input: SignUpData): Promise<User> {
+const userExists = async (email: string): Promise<boolean> => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  return !!user;
+};
+
+export async function signUp(input: SignUpData): Promise<SignUpResponse> {
+  if (await userExists(input.email))
+    return {
+      success: false,
+      message: "User with the email already exists",
+    };
+
   const hashedPassword = await hashPassword(input.password);
-  const user = await prisma.user.create({
+  await prisma.user.create({
     data: {
       username: input.username,
       email: input.email,
@@ -17,5 +28,8 @@ export async function signUp(input: SignUpData): Promise<User> {
     },
   });
 
-  return user;
+  return {
+    success: true,
+    message: "",
+  };
 }
