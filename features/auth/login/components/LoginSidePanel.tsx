@@ -1,4 +1,10 @@
-import { CheckCheck, MessageCircle, ShieldCheck, Zap } from "lucide-react";
+import {
+  CheckCheck,
+  MessageCircle,
+  Send,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
 
 const members = [
   {
@@ -88,8 +94,8 @@ const LoginSidePanel = () => {
           <div className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white/35">
             Message #bikini-bottom
           </div>
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand shadow-lg shadow-brand/30 text-sm font-bold text-[#1a1333]">
-            →
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand shadow-lg shadow-brand/30">
+            <Send width={15} className="text-[#1a1333]" strokeWidth={2.5} />
           </span>
         </div>
       </div>
