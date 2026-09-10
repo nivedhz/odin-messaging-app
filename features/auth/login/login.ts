@@ -1,14 +1,10 @@
 import prisma from "@/lib/db";
-import bcrypt from "bcrypt";
 import { LoginData } from "./types";
+import { comparePassword } from "@/lib/auth/password";
 
 const userNotExists = async (email: string): Promise<boolean> => {
   const user = await prisma.user.findUnique({ where: { email } });
   return !user;
-};
-
-const matchPassword = async (password: string, userPassword: string = "") => {
-  return await bcrypt.compare(password, userPassword);
 };
 
 export const login = async (formData: LoginData) => {
@@ -22,7 +18,10 @@ export const login = async (formData: LoginData) => {
   const user = await prisma.user.findUnique({
     where: { email: formData.email },
   });
-  const passwordMatch = await matchPassword(formData.password, user?.password);
+  const passwordMatch = await comparePassword(
+    formData.password,
+    user?.password,
+  );
   if (!passwordMatch) {
     return {
       success: false,
