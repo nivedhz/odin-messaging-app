@@ -14,7 +14,7 @@ const Hero = () => {
               Not Real-time • Not Encrypted • Not Blazing fast
             </p>
             <h1 className="text-balance text-5xl font-semibold tracking-tight text-white sm:text-6xl md:text-7xl">
-              Elevate Your
+              Lower Your
             </h1>
             <h1 className="animate-gradient-pan text-balance text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl text-brand">
               Messaging Experience
@@ -23,8 +23,8 @@ const Hero = () => {
           <div className="animate-fade-up delay-200 flex flex-col items-center gap-6">
             <div className="max-w-md text-center">
               <p className="text-sm leading-relaxed text-white/60 sm:text-base">
-                Unlock your messaging potential in a fully regulated
-                environment, powered by Sendzy
+                Lock your messaging potential in a fully regulated environment,
+                powered by Sendzy
               </p>
             </div>
             <Link href={"sign-up"}>

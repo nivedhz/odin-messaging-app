@@ -32,7 +32,7 @@ const SignUpForm = () => {
             Create your account
           </CardTitle>
           <CardDescription className="mt-1 text-sm text-white/55">
-            Pick a username and start messaging in seconds.
+            Pick a username and start messaging in hours.
           </CardDescription>
         </div>
       </CardHeader>
@@ -125,7 +125,8 @@ const SignUpForm = () => {
             </Link>
           </p>
           <p className="text-center text-[11px] leading-relaxed text-white/35">
-            By signing up you agree to our Terms & Privacy Policy.
+            By signing up you agree to our Terms & Privacy Policy. <br />{" "}
+            &#40;Which doesn&apos;t exist btw&#41;
           </p>
         </CardFooter>
       </form>

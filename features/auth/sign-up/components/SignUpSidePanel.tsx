@@ -41,7 +41,7 @@ const SignUpSidePanel = () => {
             </span>
           </h1>
           <p className="max-w-md text-sm leading-relaxed text-white/60 sm:text-base">
-            Create an account, grab a username, and start messaging in seconds.
+            Create an account, grab a username, and start messaging in hours.
             Slow, un-encrypted, and built for groups that never sleep.
           </p>
         </div>
