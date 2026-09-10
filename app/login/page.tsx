@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const Login = () => {
   return (
-    <div className="w-full text-white">
+    <div className="w-full text-white max-h-screen overflow-hidden">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 sm:px-6">
         {/* Top bar */}
         <div className="flex items-center justify-between">
