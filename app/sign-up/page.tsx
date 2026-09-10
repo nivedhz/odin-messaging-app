@@ -1,6 +1,6 @@
 import SignUpForm from "@/features/auth/sign-up/components/SignUpForm";
 import SignUpSidePanel from "@/features/auth/sign-up/components/SignUpSidePanel";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 const SignUp = () => {
@@ -20,7 +20,6 @@ const SignUp = () => {
             Go back
           </Link>
           <span className="flex items-center gap-2 text-base font-semibold tracking-tight">
-            <Send width={20} className="text-brand" strokeWidth={2.5} />
             Sendzy
           </span>
         </div>
