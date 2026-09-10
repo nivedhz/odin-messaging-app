@@ -54,7 +54,7 @@ const LoginSidePanel = () => {
           <div className="flex-1">
             <p className="text-sm font-semibold">#bikini-bottom</p>
             <p className="flex items-center gap-1.5 text-xs text-white/50">
-              <span className="animate-pulse-dot size-1.5 rounded-full bg-amber-400" />
+              <span className="animate-pulse-dot size-1.5 rounded-full bg-emerald-400" />
               {members.length} online • 3 unread
             </p>
           </div>
