@@ -1,4 +1,3 @@
-import GradientWaves from "@/components/GradientWaves";
 import SignUpForm from "@/features/auth/sign-up/components/SignUpForm";
 import {
   ArrowLeft,
@@ -31,37 +30,10 @@ const members = [
 
 const SignUp = () => {
   return (
-    <div className="relative max-h-screen w-full overflow-hidden text-white">
-      {/* Ambient background */}
-      <div className="absolute inset-0">
-        <GradientWaves
-          horizonColor="#5227FF"
-          waveColor="#FF9FFC"
-          crestColor="#FFFFFF"
-          speed={0.35}
-          amplitude={2.2}
-          waveScale={0.6}
-          waveRatio={0.9}
-          swell={35}
-          turbulence={20}
-          tilt={1.11}
-          zoom={1}
-          height={6.5}
-          fogDepth={16}
-          detail="medium"
-          brightness={0.9}
-          opacity={0.9}
-          parallaxStrength={0.5}
-          grain
-          grainIntensity={0.05}
-          mouseInteraction={false}
-        />
-        <div className="absolute inset-0" />
-      </div>
-
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
+    <div className="w-full text-white">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 sm:px-6">
         {/* Top bar */}
-        <div className="animate-fade-up flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <Link
             href={"/"}
             className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-white/70 backdrop-blur-xl transition-all hover:border-white/20 hover:text-white"
