@@ -4,7 +4,7 @@ import { Send } from "lucide-react";
 
 const Navbar = () => {
   return (
-    <div className="px-10 md:px-20 lg:px-40 py-3 flex items-center justify-between">
+    <header className="px-10 md:px-20 lg:px-40 py-3 flex items-center justify-between">
       <h1 className="text-lg font-medium flex items-center">
         <Send width={30} color="#c7baed" />
         Sendzy
@@ -24,7 +24,7 @@ const Navbar = () => {
           </Button>
         </Link>
       </div>
-    </div>
+    </header>
   );
 };
 
