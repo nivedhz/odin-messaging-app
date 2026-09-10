@@ -1,6 +1,6 @@
 import LoginForm from "@/features/auth/login/components/LoginForm";
 import LoginSidePanel from "@/features/auth/login/components/LoginSidePanel";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 const Login = () => {
@@ -20,7 +20,6 @@ const Login = () => {
             Go back
           </Link>
           <span className="flex items-center gap-2 text-base font-semibold tracking-tight">
-            <Send width={20} className="text-brand" strokeWidth={2.5} />
             Sendzy
           </span>
         </div>
