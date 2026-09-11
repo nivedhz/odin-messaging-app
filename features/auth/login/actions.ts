@@ -25,12 +25,12 @@ export async function handleLogin(
   formData: FormData,
 ): Promise<LoginResponse> {
   const data = getFormInfo(formData);
-  const user = await login(data);
+  const loginStatus = await login(data);
 
-  if (!user.success) {
+  if (!loginStatus.success) {
     return {
       success: false,
-      message: user.message,
+      message: loginStatus.message,
     };
   }
 
