@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/session";
 
-const protectedRoutes = ["/dashboard", "/profile"];
+const protectedRoutes = ["/chat", "/profile"];
 const publicRoutes = ["/login", "/sign-up"];
 
 export default async function proxy(req: NextRequest) {
@@ -16,7 +16,7 @@ export default async function proxy(req: NextRequest) {
 
   // Accessing home when logged in
   if (path === "/" && session?.userId) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+    return NextResponse.redirect(new URL("/chat", req.nextUrl));
   }
   // Accessing protected routes when not logged in
   if (isProtectedRoute && !session?.userId) {
@@ -24,7 +24,7 @@ export default async function proxy(req: NextRequest) {
   }
   // Accessing public routes when logged in
   if (isPublicRoute && session?.userId) {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+    return NextResponse.redirect(new URL("/chat", req.nextUrl));
   }
 
   return NextResponse.next();
