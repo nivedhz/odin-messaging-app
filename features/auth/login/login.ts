@@ -1,23 +1,25 @@
 import prisma from "@/lib/db";
 import { LoginData } from "./types";
 import { comparePassword } from "@/lib/auth/password";
+import { createSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
-const userNotExists = async (email: string): Promise<boolean> => {
-  const user = await prisma.user.findUnique({ where: { email } });
-  return !user;
+const getUser = async (email: string) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+  return user;
 };
 
 export const login = async (formData: LoginData) => {
-  if (await userNotExists(formData.email)) {
+  const user = await getUser(formData.email);
+  if (!user) {
     return {
       success: false,
       message: "User with this email doesn't exist",
     };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: formData.email },
-  });
   const passwordMatch = await comparePassword(
     formData.password,
     user?.password,
@@ -29,8 +31,6 @@ export const login = async (formData: LoginData) => {
     };
   }
 
-  return {
-    success: true,
-    message: "Welcome back! Redirecting you to your chats…",
-  };
+  await createSession(user?.id || "");
+  redirect("/dashboard");
 };
