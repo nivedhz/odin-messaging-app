@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { getSession } from "@/lib/session";
+import LogOutButton from "./LogOutButton";
 
 const Navbar = async () => {
   const session = await getSession();
@@ -20,12 +21,7 @@ const Navbar = async () => {
                 Online
               </span>
               <span aria-hidden="true" className="h-4 w-px bg-white/15" />
-              <Button
-                className="text-sm font-medium tracking-[-0.01em] text-white/60 transition-colors hover:text-white"
-                variant={"ghost"}
-              >
-                Log out
-              </Button>
+              <LogOutButton />
             </div>
           ) : (
             <>
