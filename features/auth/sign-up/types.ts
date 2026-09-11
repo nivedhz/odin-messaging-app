@@ -1,3 +1,5 @@
+import { JWTPayload } from "jose";
+
 export interface SignUpData {
   username: string;
   email: string;
@@ -13,4 +15,5 @@ export interface User {
 export interface SignUpResponse {
   success: boolean;
   message: string;
+  session?: JWTPayload | null;
 }
