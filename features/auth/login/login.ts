@@ -32,5 +32,5 @@ export const login = async (formData: LoginData) => {
   }
 
   await createSession(user?.id || "");
-  redirect("/dashboard");
+  redirect("/chat");
 };

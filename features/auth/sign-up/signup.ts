@@ -2,6 +2,7 @@ import { hashPassword } from "@/lib/auth/password";
 import prisma from "@/lib/db";
 import { SignUpData, SignUpResponse } from "./types";
 import { createSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 const userExists = async (email: string): Promise<boolean> => {
   const user = await prisma.user.findUnique({ where: { email } });
@@ -31,9 +32,5 @@ export async function signUp(input: SignUpData): Promise<SignUpResponse> {
   });
 
   await createSession(user.id);
-
-  return {
-    success: true,
-    message: "",
-  };
+  redirect("/chat");
 }
