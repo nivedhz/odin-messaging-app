@@ -30,7 +30,7 @@ export async function signUp(input: SignUpData): Promise<SignUpResponse> {
     },
   });
 
-  createSession(user.id);
+  await createSession(user.id);
 
   return {
     success: true,
