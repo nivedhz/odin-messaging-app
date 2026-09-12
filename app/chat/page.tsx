@@ -22,7 +22,6 @@ const page = async ({
   if (!session?.userId) redirect("/login");
   const user = await getUser(session.userId as string);
   if (!user) redirect("/login");
-  console.log(user);
 
   const { chat: chatParam, q: qParam, tab: tabParam } = await searchParams;
   const query = (qParam ?? "").trim();
@@ -118,9 +117,7 @@ const page = async ({
 
   const chattedIds = new Set(
     user.chats.flatMap((chat) =>
-      chat.members
-        .map((member) => member.id)
-        .filter((id) => id !== user.id),
+      chat.members.map((member) => member.id).filter((id) => id !== user.id),
     ),
   );
   const suggested = friends
