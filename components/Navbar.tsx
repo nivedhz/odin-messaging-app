@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { getSession } from "@/lib/auth/session";
-import { getUsername } from "@/features/chat/user";
 
-const Navbar = async () => {
-  const session = await getSession();
-  const username = session ? await getUsername(session.userId as string) : null;
+interface NavbarProps {
+  username: string | undefined;
+}
+
+const Navbar = async ({ username }: NavbarProps) => {
   return (
     <header className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8">
       <div className="flex items-center justify-between pb-5">
@@ -15,7 +15,7 @@ const Navbar = async () => {
           </span>
         </Link>
         <div className="flex items-center gap-7">
-          {session ? (
+          {username ? (
             <div className="flex items-center gap-5">
               <span className="flex items-center gap-2 text-xs font-medium tracking-[-0.01em] text-white/50">
                 <span className="animate-pulse-dot size-1.5 rounded-full bg-emerald-400" />

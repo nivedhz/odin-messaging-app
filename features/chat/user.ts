@@ -1,14 +1,18 @@
 import prisma from "@/lib/db";
 
-export async function getUsername(userId: string): Promise<string | null> {
+export async function getUser(userId: string) {
   const user = await prisma.user.findUnique({
     where: {
       id: userId,
     },
-    select: {
-      username: true,
+    include: {
+      chats: true,
+      messages: true,
+    },
+    omit: {
+      password: true,
     },
   });
 
-  return user?.username ?? null;
+  return user;
 }
