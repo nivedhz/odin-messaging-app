@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCheck, MessagesSquare, Send } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCheck,
+  ImagePlus,
+  MessagesSquare,
+  Send,
+  Smile,
+} from "lucide-react";
 import {
   avatarGradient,
   dayLabel,
@@ -18,6 +25,7 @@ interface ChatThreadProps {
   chat: { id: string; index: number; total: number; name: string } | null;
   messages: ThreadMessage[];
   currentUserId: string;
+  memberNames: Record<string, string>;
   hasChats: boolean;
 }
 
@@ -25,6 +33,7 @@ const ChatThread = ({
   chat,
   messages,
   currentUserId,
+  memberNames,
   hasChats,
 }: ChatThreadProps) => {
   if (!chat) {
@@ -92,6 +101,9 @@ const ChatThread = ({
             {messages.map((message, i) => {
               const prev = messages[i - 1];
               const isMine = message.creatorId === currentUserId;
+              const senderName = isMine
+                ? "You"
+                : (memberNames[message.creatorId] ?? "Member");
               const startsGroup =
                 !prev ||
                 prev.creatorId !== message.creatorId ||
@@ -120,10 +132,14 @@ const ChatThread = ({
                         aria-hidden="true"
                         className={
                           startsGroup
-                            ? `size-7 shrink-0 rounded-full bg-gradient-to-br ${avatarGradient(message.creatorId)}`
+                            ? `grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br text-[10px] font-bold text-[#1a1333] ${avatarGradient(message.creatorId)}`
                             : "w-7 shrink-0"
                         }
-                      />
+                      >
+                        {startsGroup
+                          ? senderName.charAt(0).toUpperCase()
+                          : ""}
+                      </span>
                     )}
                     <div
                       className={
@@ -132,9 +148,9 @@ const ChatThread = ({
                           : "flex max-w-[80%] flex-col items-start"
                       }
                     >
-                      {isMine && startsGroup && (
+                      {startsGroup && (
                         <span className="mb-1 text-[11px] font-medium text-white/40">
-                          You
+                          {senderName}
                         </span>
                       )}
                       <p
@@ -171,16 +187,40 @@ const ChatThread = ({
       </div>
 
       <div className="border-t border-white/10 px-4 py-3.5 sm:px-6">
-        <div
-          aria-disabled="true"
-          className="flex items-center gap-2 opacity-60"
-        >
-          <div className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/35">
-            Messaging is read-only in this preview…
+        <div className="flex items-end gap-2">
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="grid size-12 shrink-0 cursor-default place-items-center rounded-2xl border border-white/10 bg-white/5 text-white/40"
+          >
+            <ImagePlus width={18} />
+          </button>
+          <div className="flex flex-1 items-end gap-2 rounded-2xl border border-white/10 bg-white/5 px-2 py-2 transition-colors focus-within:border-brand/50">
+            <input
+              type="text"
+              placeholder={`Message ${title}…`}
+              aria-label={`Message ${title}`}
+              className="max-h-32 min-h-8 flex-1 bg-transparent px-2 text-sm text-white outline-none placeholder:text-white/30"
+            />
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              className="grid size-8 shrink-0 cursor-default place-items-center rounded-xl text-white/40"
+            >
+              <Smile width={18} />
+            </button>
           </div>
-          <span className="grid size-12 shrink-0 cursor-not-allowed place-items-center rounded-2xl bg-brand/40">
-            <Send width={17} className="text-[#1a1333]/60" strokeWidth={2.5} />
-          </span>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden="true"
+            title="Send (not wired yet)"
+            className="grid size-12 shrink-0 cursor-default place-items-center rounded-2xl bg-brand text-[#1a1333] shadow-lg shadow-brand/25"
+          >
+            <Send width={17} strokeWidth={2.5} />
+          </button>
         </div>
       </div>
     </div>

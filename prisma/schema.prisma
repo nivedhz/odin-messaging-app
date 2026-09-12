@@ -19,24 +19,45 @@ model User {
   username String
   password String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  messages Message[]
-  chats    Chat[]
+  messages               Message[]
+  chats                  Chat[]
+  sentFriendRequests     Friendship[] @relation("FriendshipRequester")
+  receivedFriendRequests Friendship[] @relation("FriendshipRecipient")
 
   @@map("users")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+model Friendship {
+  id String @id @default(cuid())
+
+  status FriendshipStatus @default(PENDING)
+
+  requester   User   @relation("FriendshipRequester", fields: [requesterId], references: [id])
+  requesterId String @map("requester_id")
+
+  recipient   User   @relation("FriendshipRecipient", fields: [recipientId], references: [id])
+  recipientId String @map("recipient_id")
+
+  @@map("friendships")
 }
 
 model Message {
   id      String @id @default(cuid())
   content String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  chatId    String
-  creatorId String
+  chatId    String @map("chat_id")
+  creatorId String @map("creator_id")
 
   chat    Chat @relation(fields: [chatId], references: [id])
   creator User @relation(fields: [creatorId], references: [id])
@@ -47,10 +68,11 @@ model Message {
 model Chat {
   id String @id @default(cuid())
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  name String
+  name    String
+  isGroup Boolean @map("is_group")
 
   messages Message[]
   members  User[]

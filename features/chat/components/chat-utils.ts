@@ -35,6 +35,13 @@ export function messageTime(value: Date): string {
   });
 }
 
+export function monthYear(value: Date): string {
+  return value.toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export function sameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&

@@ -3,7 +3,13 @@ import ChatSidebar, {
   SidebarTab,
 } from "@/features/chat/components/ChatSidebar";
 import ChatThread from "@/features/chat/components/ChatThread";
-import { getAllUsers, getUser } from "@/features/chat/user";
+import {
+  getAllUsers,
+  getFriends,
+  getReceivedFriendRequests,
+  getSentFriendRequests,
+  getUser,
+} from "@/features/chat/user";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 
@@ -16,6 +22,7 @@ const page = async ({
   if (!session?.userId) redirect("/login");
   const user = await getUser(session.userId as string);
   if (!user) redirect("/login");
+  console.log(user);
 
   const { chat: chatParam, q: qParam, tab: tabParam } = await searchParams;
   const query = (qParam ?? "").trim();
@@ -62,9 +69,8 @@ const page = async ({
         chat.lastMessage?.content.toLowerCase().includes(needle),
     );
 
-  const allUsers = await getAllUsers();
+  const allUsers = await getAllUsers(user.id);
   const people = allUsers
-    .filter((person) => person.id !== user.id)
     .filter(
       (person) =>
         !needle ||
@@ -77,15 +83,90 @@ const page = async ({
       email: person.email,
     }));
 
-  const activeEntry = sidebarChats.find((chat) => chat.id === chatParam);
-  const activeChat = activeEntry
+  const [sentRequests, receivedRequests, friendships] = await Promise.all([
+    getSentFriendRequests(user.id),
+    getReceivedFriendRequests(user.id),
+    getFriends(user.id),
+  ]);
+
+  const userById = new Map(allUsers.map((person) => [person.id, person]));
+  const sent = sentRequests.map((request) => ({
+    recipientId: request.recipientId,
+    requestId: request.id,
+  }));
+  const received = receivedRequests.map((request) => {
+    const sender = userById.get(request.requesterId);
+    return {
+      id: request.id,
+      userId: request.requesterId,
+      username: sender?.username ?? "Unknown",
+      email: sender?.email ?? "",
+    };
+  });
+  const friends = friendships.map((friendship) => {
+    const other =
+      friendship.requester.id === user.id
+        ? friendship.recipient
+        : friendship.requester;
+    return {
+      id: other.id,
+      userId: other.id,
+      username: other.username,
+      email: other.email,
+    };
+  });
+
+  const chattedIds = new Set(
+    user.chats.flatMap((chat) =>
+      chat.members
+        .map((member) => member.id)
+        .filter((id) => id !== user.id),
+    ),
+  );
+  const suggested = friends
+    .filter((friend) => !chattedIds.has(friend.userId))
+    .slice(0, 8)
+    .map((friend) => ({ userId: friend.userId, username: friend.username }));
+
+  const chatMeta = new Map(
+    byUpdatedDesc.map((chat, index) => {
+      const others = chat.members
+        .filter((member) => member.id !== user.id)
+        .map((member) => member.username);
+      return [
+        chat.id,
+        {
+          id: chat.id,
+          index,
+          name:
+            others.length === 0
+              ? "Just you"
+              : others.length <= 2
+                ? others.join(", ")
+                : `${others.slice(0, 2).join(", ")} +${others.length - 2}`,
+          members: chat.members,
+        },
+      ] as const;
+    }),
+  );
+
+  const activeMeta = (chatParam && chatMeta.get(chatParam)) || null;
+  const activeChat = activeMeta
     ? {
-        id: activeEntry.id,
-        index: activeEntry.index,
-        total: activeEntry.total,
-        name: activeEntry.name,
+        id: activeMeta.id,
+        index: activeMeta.index,
+        total: user.messages.filter(
+          (message) => message.chatId === activeMeta.id,
+        ).length,
+        name: activeMeta.name,
       }
     : null;
+  const memberNames: Record<string, string> = {};
+  if (activeMeta) {
+    for (const member of activeMeta.members) {
+      memberNames[member.id] = member.username;
+    }
+  }
   const threadMessages = activeChat
     ? user.messages
         .filter((message) => message.chatId === activeChat.id)
@@ -103,6 +184,10 @@ const page = async ({
             <ChatSidebar
               chats={sidebarChats}
               users={people}
+              suggested={suggested}
+              sentRequests={sent}
+              receivedRequests={received}
+              friends={friends}
               tab={tab}
               activeChatId={activeChat?.id ?? null}
               query={query}
@@ -116,6 +201,7 @@ const page = async ({
               chat={activeChat}
               messages={threadMessages}
               currentUserId={user.id}
+              memberNames={memberNames}
               hasChats={user.chats.length > 0}
             />
           </section>

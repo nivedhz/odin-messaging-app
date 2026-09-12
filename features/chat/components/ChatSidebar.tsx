@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { MessageCircle, Search, Users } from "lucide-react";
-import { avatarGradient, messageTime } from "./chat-utils";
+import { handleOpenDirectChat } from "../actions";
+import { avatarGradient, messageTime, monthYear } from "./chat-utils";
 import FriendButton from "./FriendButton";
+import FriendRequestActions from "./FriendRequestActions";
 
 export interface SidebarChat {
   id: string;
@@ -20,9 +22,21 @@ export interface SidebarUser {
 
 export type SidebarTab = "chats" | "people" | "friends";
 
+export interface SidebarPeer {
+  id: string;
+  userId: string;
+  username: string;
+  email: string;
+  since?: Date;
+}
+
 interface ChatSidebarProps {
   chats: SidebarChat[];
   users: SidebarUser[];
+  suggested: { userId: string; username: string }[];
+  sentRequests: { recipientId: string; requestId: string }[];
+  receivedRequests: SidebarPeer[];
+  friends: SidebarPeer[];
   tab: SidebarTab;
   activeChatId: string | null;
   query: string;
@@ -38,6 +52,10 @@ const tabs: { id: SidebarTab; label: string }[] = [
 const ChatSidebar = ({
   chats,
   users,
+  suggested,
+  sentRequests,
+  receivedRequests,
+  friends,
   tab,
   activeChatId,
   query,
@@ -89,6 +107,42 @@ const ChatSidebar = ({
       </form>
 
       <div className="scroll-slim mt-3 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
+        {tab === "chats" && suggested.length > 0 && !query && (
+          <div className="px-1 pt-1 pb-3">
+            <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+              Suggested
+            </p>
+            <div className="scroll-slim flex gap-1 overflow-x-auto pb-1">
+              {suggested.map((person) => (
+                <form
+                  key={person.userId}
+                  action={handleOpenDirectChat}
+                  className="shrink-0 rounded-2xl border border-transparent transition-colors hover:border-white/15 hover:bg-white/10"
+                >
+                  <input
+                    type="hidden"
+                    name="friendId"
+                    value={person.userId}
+                  />
+                  <button
+                    type="submit"
+                    title={`Chat with ${person.username}`}
+                    className="group flex w-16 cursor-pointer flex-col items-center gap-1.5 bg-transparent px-1 py-2"
+                  >
+                    <span
+                      className={`grid size-12 place-items-center rounded-full bg-linear-to-br text-base font-bold text-[#1a1333] ring-2 ring-transparent transition-all group-hover:ring-brand/50 ${avatarGradient(person.username)}`}
+                    >
+                      {person.username.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="w-full truncate text-center text-[11px] font-medium text-white/60 transition-colors group-hover:text-white">
+                      {person.username}
+                    </span>
+                  </button>
+                </form>
+              ))}
+            </div>
+          </div>
+        )}
         {tab === "people" ? (
           users.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
@@ -125,28 +179,135 @@ const ChatSidebar = ({
                     {person.email}
                   </span>
                 </span>
-                <FriendButton username={person.username} />
+                <FriendButton
+                  username={person.username}
+                  recipientId={person.id}
+                  initialRequested={
+                    !!sentRequests.find(
+                      (request) => request.recipientId === person.id,
+                    )
+                  }
+                  initialRequestId={
+                    sentRequests.find(
+                      (request) => request.recipientId === person.id,
+                    )?.requestId ?? null
+                  }
+                />
               </div>
             ))
           )
         ) : tab === "friends" ? (
-          <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
-            <span className="grid size-12 place-items-center rounded-2xl border border-white/10 bg-white/5">
-              <Users width={20} className="text-white/40" />
-            </span>
+          <div className="flex flex-col gap-5 px-1 pb-4">
             <div>
-              <p className="text-sm font-semibold text-white">No friends yet</p>
-              <p className="mt-1 text-xs leading-relaxed text-white/45">
-                People you add will appear here. Head to People to send your
-                first request.
+              <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                Requests · {receivedRequests.length}
               </p>
+              {receivedRequests.length === 0 ? (
+                <p className="px-2 pt-2 text-xs leading-relaxed text-white/45">
+                  No pending requests. When someone adds you, you can accept or
+                  decline here.
+                </p>
+              ) : (
+                <div className="mt-2 space-y-1">
+                  {receivedRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5"
+                    >
+                      <span
+                        className={`grid size-10 shrink-0 place-items-center rounded-full bg-linear-to-br text-xs font-bold text-[#1a1333] ${avatarGradient(request.username)}`}
+                      >
+                        {request.username.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold tracking-[-0.01em] text-white">
+                          {request.username}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-white/45">
+                          Wants to be friends
+                        </span>
+                      </span>
+                      <FriendRequestActions
+                        requestId={request.id}
+                        username={request.username}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <Link
-              href={tabHref("people")}
-              className="mt-1 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70 transition-colors hover:border-white/25 hover:text-white"
-            >
-              Find people
-            </Link>
+            <div>
+              <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                Friends · {friends.length}
+              </p>
+              {friends.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+                  <span className="grid size-12 place-items-center rounded-2xl border border-white/10 bg-white/5">
+                    <Users width={20} className="text-white/40" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      No friends yet
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/45">
+                      People you add will appear here. Head to People to send
+                      your first request.
+                    </p>
+                  </div>
+                  <Link
+                    href={tabHref("people")}
+                    className="mt-1 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/70 transition-colors hover:border-white/25 hover:text-white"
+                  >
+                    Find people
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-2 space-y-1">
+                  {friends.map((friend) => (
+                    <form
+                      key={friend.id}
+                      action={handleOpenDirectChat}
+                      className="rounded-2xl border border-transparent transition-colors hover:border-white/15 hover:bg-white/10"
+                    >
+                      <input
+                        type="hidden"
+                        name="friendId"
+                        value={friend.userId}
+                      />
+                      <button
+                        type="submit"
+                        title={`Chat with ${friend.username}`}
+                        className="group flex w-full cursor-pointer items-center gap-3 bg-transparent px-3 py-2.5 text-left"
+                      >
+                        <span
+                          className={`grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(friend.username)}`}
+                        >
+                          {friend.username.charAt(0).toUpperCase()}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold tracking-[-0.01em] text-white">
+                            {friend.username}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-white/45">
+                            {friend.email}
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2 text-white/40">
+                          {friend.since && (
+                            <span className="hidden text-[11px] xl:block">
+                              {monthYear(friend.since)}
+                            </span>
+                          )}
+                          <span className="grid size-8 place-items-center rounded-full border border-white/15 bg-white/5 transition-colors group-hover:border-white/25">
+                            <MessageCircle width={15} />
+                          </span>
+                        </span>
+                      </button>
+                    </form>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : chats.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
