@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { MessageCircle, Search, Users } from "lucide-react";
-import { handleOpenDirectChat } from "../actions";
+import { Check, MessageCircle, Search, Users, X } from "lucide-react";
 import { avatarGradient, messageTime, monthYear } from "./chat-utils";
 import FriendButton from "./FriendButton";
-import FriendRequestActions from "./FriendRequestActions";
 
 export interface SidebarChat {
   id: string;
@@ -33,7 +31,7 @@ export interface SidebarPeer {
 interface ChatSidebarProps {
   chats: SidebarChat[];
   users: SidebarUser[];
-  suggested: { userId: string; username: string }[];
+  suggested: SidebarPeer[];
   sentRequests: { recipientId: string; requestId: string }[];
   receivedRequests: SidebarPeer[];
   friends: SidebarPeer[];
@@ -68,6 +66,8 @@ const ChatSidebar = ({
     if (query) params.set("q", query);
     return `/chat?${params.toString()}`;
   };
+  console.log(suggested);
+  console.log(friends);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -113,32 +113,20 @@ const ChatSidebar = ({
               Suggested
             </p>
             <div className="scroll-slim flex gap-1 overflow-x-auto pb-1">
-              {suggested.map((person) => (
-                <form
-                  key={person.userId}
-                  action={handleOpenDirectChat}
-                  className="shrink-0 rounded-2xl border border-transparent transition-colors hover:border-white/15 hover:bg-white/10"
+              {suggested.map((chat) => (
+                <div
+                  key={chat.id}
+                  className="shrink-0 rounded-lg border border-transparent flex flex-col justify-center items-center"
                 >
-                  <input
-                    type="hidden"
-                    name="friendId"
-                    value={person.userId}
-                  />
-                  <button
-                    type="submit"
-                    title={`Chat with ${person.username}`}
-                    className="group flex w-16 cursor-pointer flex-col items-center gap-1.5 bg-transparent px-1 py-2"
+                  <span
+                    className={`grid size-12 place-items-center rounded-full bg-linear-to-br text-base font-bold text-[#1a1333] ring-2 ring-transparent transition-all group-hover:ring-brand/50 ${avatarGradient(chat.username)}`}
                   >
-                    <span
-                      className={`grid size-12 place-items-center rounded-full bg-linear-to-br text-base font-bold text-[#1a1333] ring-2 ring-transparent transition-all group-hover:ring-brand/50 ${avatarGradient(person.username)}`}
-                    >
-                      {person.username.charAt(0).toUpperCase()}
-                    </span>
-                    <span className="w-full truncate text-center text-[11px] font-medium text-white/60 transition-colors group-hover:text-white">
-                      {person.username}
-                    </span>
-                  </button>
-                </form>
+                    {chat.username.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="w-full truncate text-center text-[11px] font-medium text-white/60">
+                    {chat.username}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
@@ -181,16 +169,10 @@ const ChatSidebar = ({
                 </span>
                 <FriendButton
                   username={person.username}
-                  recipientId={person.id}
                   initialRequested={
                     !!sentRequests.find(
                       (request) => request.recipientId === person.id,
                     )
-                  }
-                  initialRequestId={
-                    sentRequests.find(
-                      (request) => request.recipientId === person.id,
-                    )?.requestId ?? null
                   }
                 />
               </div>
@@ -227,10 +209,20 @@ const ChatSidebar = ({
                           Wants to be friends
                         </span>
                       </span>
-                      <FriendRequestActions
-                        requestId={request.id}
-                        username={request.username}
-                      />
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <span
+                          title={`Accept ${request.username} (visual only)`}
+                          className="grid size-8 place-items-center rounded-full bg-brand text-[#1a1333]"
+                        >
+                          <Check width={15} />
+                        </span>
+                        <span
+                          title={`Decline ${request.username} (visual only)`}
+                          className="grid size-8 place-items-center rounded-full border border-white/15 bg-white/5 text-white/60"
+                        >
+                          <X width={15} />
+                        </span>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -264,20 +256,13 @@ const ChatSidebar = ({
               ) : (
                 <div className="mt-2 space-y-1">
                   {friends.map((friend) => (
-                    <form
+                    <div
                       key={friend.id}
-                      action={handleOpenDirectChat}
-                      className="rounded-2xl border border-transparent transition-colors hover:border-white/15 hover:bg-white/10"
+                      className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 transition-colors hover:bg-white/5"
                     >
-                      <input
-                        type="hidden"
-                        name="friendId"
-                        value={friend.userId}
-                      />
-                      <button
-                        type="submit"
-                        title={`Chat with ${friend.username}`}
-                        className="group flex w-full cursor-pointer items-center gap-3 bg-transparent px-3 py-2.5 text-left"
+                      <span
+                        title={`Chat with ${friend.username} (visual only)`}
+                        className="group flex w-full items-center gap-3 bg-transparent px-0 py-0 text-left"
                       >
                         <span
                           className={`grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(friend.username)}`}
@@ -302,8 +287,8 @@ const ChatSidebar = ({
                             <MessageCircle width={15} />
                           </span>
                         </span>
-                      </button>
-                    </form>
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -327,16 +312,10 @@ const ChatSidebar = ({
           </div>
         ) : (
           chats.map((chat) => {
-            const isActive = chat.id === activeChatId;
             return (
-              <Link
+              <div
                 key={chat.id}
-                href={`/chat?tab=chats&chat=${chat.id}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
-                className={
-                  isActive
-                    ? "flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 py-3"
-                    : "flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3 transition-colors hover:bg-white/5"
-                }
+                className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3"
               >
                 <span
                   className={`grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(chat.name || chat.id)}`}
@@ -360,7 +339,7 @@ const ChatSidebar = ({
                       : "No messages yet"}
                   </span>
                 </span>
-              </Link>
+              </div>
             );
           })
         )}

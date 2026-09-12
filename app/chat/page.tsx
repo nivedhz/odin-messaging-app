@@ -122,8 +122,7 @@ const page = async ({
   );
   const suggested = friends
     .filter((friend) => !chattedIds.has(friend.userId))
-    .slice(0, 8)
-    .map((friend) => ({ userId: friend.userId, username: friend.username }));
+    .slice(0, 8);
 
   const chatMeta = new Map(
     byUpdatedDesc.map((chat, index) => {
