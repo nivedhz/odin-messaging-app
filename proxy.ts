@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getSession } from "@/lib/session";
+import { getSession } from "@/lib/auth/session";
 
 const protectedRoutes = ["/chat", "/profile"];
 const publicRoutes = ["/login", "/sign-up"];
