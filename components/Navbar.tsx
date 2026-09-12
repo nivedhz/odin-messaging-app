@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 
 interface NavbarProps {
-  username: string | undefined;
+  username?: string | undefined;
 }
 
 const Navbar = async ({ username }: NavbarProps) => {
