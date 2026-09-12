@@ -113,7 +113,7 @@ const ChatSidebar = ({
                 className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 transition-colors hover:bg-white/5"
               >
                 <span
-                  className={`grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(person.username)}`}
+                  className={`grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(person.username)}`}
                 >
                   {person.username.charAt(0).toUpperCase()}
                 </span>
@@ -178,7 +178,7 @@ const ChatSidebar = ({
                 }
               >
                 <span
-                  className={`grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(chat.name || chat.id)}`}
+                  className={`grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(chat.name || chat.id)}`}
                 >
                   {chat.name.charAt(0).toUpperCase()}
                 </span>
