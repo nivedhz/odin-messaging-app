@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { getSession } from "@/lib/session";
-import LogOutButton from "./LogOutButton";
+import { getSession } from "@/lib/auth/session";
+import { getUsername } from "@/features/chat/user";
 
 const Navbar = async () => {
   const session = await getSession();
+  const username = session ? await getUsername(session.userId as string) : null;
   return (
     <header className="mx-auto w-full max-w-6xl px-5 pt-6 sm:px-8">
       <div className="flex items-center justify-between pb-5">
@@ -21,7 +22,9 @@ const Navbar = async () => {
                 Online
               </span>
               <span aria-hidden="true" className="h-4 w-px bg-white/15" />
-              <LogOutButton />
+              <span className="flex items-center gap-2 text-xs font-medium tracking-[-0.01em] text-white/50">
+                {username}
+              </span>
             </div>
           ) : (
             <>
