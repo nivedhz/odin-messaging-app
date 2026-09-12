@@ -1,7 +1,7 @@
 import prisma from "@/lib/db";
 import { LoginData } from "./types";
 import { comparePassword } from "@/lib/auth/password";
-import { createSession } from "@/lib/session";
+import { createSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 
 const getUser = async (email: string) => {

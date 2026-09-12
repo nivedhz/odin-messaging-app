@@ -1,7 +1,7 @@
 import { hashPassword } from "@/lib/auth/password";
 import prisma from "@/lib/db";
 import { SignUpData, SignUpResponse } from "./types";
-import { createSession } from "@/lib/session";
+import { createSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 
 const userExists = async (email: string): Promise<boolean> => {
