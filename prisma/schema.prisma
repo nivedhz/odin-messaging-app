@@ -13,12 +13,45 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String
-  password  String
+  id String @id @default(cuid())
+
+  email    String @unique
+  username String
+  password String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  messages Message[]
+  chats    Chat[]
+
   @@map("users")
+}
+
+model Message {
+  id      String @id @default(cuid())
+  content String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chatId    String
+  creatorId String
+
+  chat    Chat @relation(fields: [chatId], references: [id])
+  creator User @relation(fields: [creatorId], references: [id])
+
+  @@map("messages")
+}
+
+model Chat {
+  id String @id @default(cuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+  members  User[]
+
+  @@map("chats")
 }
