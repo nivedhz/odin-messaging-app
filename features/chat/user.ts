@@ -6,7 +6,12 @@ export async function getUser(userId: string) {
       id: userId,
     },
     include: {
-      chats: true,
+      chats: {
+        include: {
+          members: true,
+          messages: true,
+        },
+      },
       messages: true,
     },
     omit: {
@@ -15,4 +20,9 @@ export async function getUser(userId: string) {
   });
 
   return user;
+}
+
+export async function getAllUsers() {
+  const users = await prisma.user.findMany();
+  return users;
 }

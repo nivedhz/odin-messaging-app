@@ -50,6 +50,8 @@ model Chat {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  name String
+
   messages Message[]
   members  User[]
 
