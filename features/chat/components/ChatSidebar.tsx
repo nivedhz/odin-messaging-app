@@ -66,8 +66,6 @@ const ChatSidebar = ({
     if (query) params.set("q", query);
     return `/chat?${params.toString()}`;
   };
-  console.log(suggested);
-  console.log(friends);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
