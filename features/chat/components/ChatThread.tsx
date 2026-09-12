@@ -7,12 +7,7 @@ import {
   Send,
   Smile,
 } from "lucide-react";
-import {
-  avatarGradient,
-  dayLabel,
-  messageTime,
-  sameDay,
-} from "./chat-utils";
+import { avatarGradient, dayLabel, messageTime, sameDay } from "./chat-utils";
 
 export interface ThreadMessage {
   id: string;
@@ -69,7 +64,7 @@ const ChatThread = ({
           <ArrowLeft width={16} />
         </Link>
         <span
-          className={`grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br text-xs font-bold text-[#1a1333] ${avatarGradient(chat.name || chat.id)}`}
+          className={`grid size-10 shrink-0 place-items-center rounded-full bg-linear-to-br text-xs font-bold text-[#1a1333] ${avatarGradient(chat.name || chat.id)}`}
         >
           {title.charAt(0).toUpperCase()}
         </span>
@@ -79,9 +74,7 @@ const ChatThread = ({
           </p>
           <p className="flex items-center gap-1.5 text-xs text-white/45">
             <span className="animate-pulse-dot size-1.5 rounded-full bg-emerald-400" />
-            {chat.total === 1
-              ? "1 message"
-              : `${chat.total} messages`}
+            {chat.total === 1 ? "1 message" : `${chat.total} messages`}
           </p>
         </div>
       </div>
@@ -89,10 +82,8 @@ const ChatThread = ({
       <div className="scroll-slim flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <p className="text-sm font-semibold text-white">
-              No messages yet
-            </p>
-            <p className="max-w-[240px] text-xs leading-relaxed text-white/45">
+            <p className="text-sm font-semibold text-white">No messages yet</p>
+            <p className="max-w-60 text-xs leading-relaxed text-white/45">
               This conversation exists, but nothing has been said here.
             </p>
           </div>
@@ -132,13 +123,11 @@ const ChatThread = ({
                         aria-hidden="true"
                         className={
                           startsGroup
-                            ? `grid size-7 shrink-0 place-items-center rounded-full bg-gradient-to-br text-[10px] font-bold text-[#1a1333] ${avatarGradient(message.creatorId)}`
+                            ? `grid size-7 shrink-0 place-items-center rounded-full bg-linear-to-br text-[10px] font-bold text-[#1a1333] ${avatarGradient(message.creatorId)}`
                             : "w-7 shrink-0"
                         }
                       >
-                        {startsGroup
-                          ? senderName.charAt(0).toUpperCase()
-                          : ""}
+                        {startsGroup ? senderName.charAt(0).toUpperCase() : ""}
                       </span>
                     )}
                     <div
