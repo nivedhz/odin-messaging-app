@@ -48,13 +48,6 @@ const MessageComposer = ({
       className="border-t border-white/10 px-4 py-3.5 sm:px-6"
     >
       <div className="flex items-end gap-2">
-        {/* Attachment stub — visual only until image storage lands. */}
-        <span
-          title="Images land with image storage"
-          className="grid size-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/5 text-white/25"
-        >
-          <ImagePlus width={18} />
-        </span>
         <div className="flex flex-1 items-end gap-2 rounded-2xl border border-white/10 bg-white/5 px-2 py-2 transition-colors focus-within:border-brand/50">
           <input
             ref={inputRef}
