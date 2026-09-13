@@ -84,7 +84,10 @@ const page = async ({
   ]);
 
   const userById = new Map(allUsers.map((person) => [person.id, person]));
-  const sentRecipientIds = sentRequests.map((request) => request.recipientId);
+  const sent = sentRequests.map((request) => ({
+    recipientId: request.recipientId,
+    requestId: request.id,
+  }));
   const received = receivedRequests.map((request) => {
     const sender = userById.get(request.requesterId);
     return {
@@ -117,14 +120,16 @@ const page = async ({
     .slice(0, 8);
 
   return (
-    <div className="flex w-full flex-1 flex-col">
+    // Strict viewport shell: exactly 100dvh, page never scrolls —
+    // only the sidebar list and the message list scroll internally.
+    <div className="flex h-dvh w-full flex-col overflow-hidden">
       <Navbar username={user.username} />
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-6 sm:px-6">
+      <main className="mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col px-4 pb-6 sm:px-6">
         <ChatScreen
           chats={chats}
           people={people}
           suggested={suggested}
-          sentRecipientIds={sentRecipientIds}
+          sentRequests={sent}
           receivedRequests={received}
           friends={friends}
           initialTab={tab}
