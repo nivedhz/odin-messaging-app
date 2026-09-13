@@ -42,3 +42,26 @@ export async function getOrCreateDirectChat(userId: string, friendId: string) {
   });
   return chat;
 }
+
+export async function sendMessage(
+  chatId: string,
+  content: string,
+  creatorId: string,
+) {
+  const message = await prisma.message.create({
+    data: {
+      chatId,
+      content,
+      creatorId,
+    },
+  });
+  return message;
+}
+
+export async function getMessages(chatId: string) {
+  const messages = await prisma.message.findMany({
+    where: { chatId },
+    orderBy: { createdAt: "asc" },
+  });
+  return messages;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -10,7 +10,6 @@ import {
   MessagesSquare,
   Search,
   Send,
-  Smile,
   Users,
   X,
 } from "lucide-react";
@@ -20,10 +19,17 @@ import {
   messageTime,
   monthYear,
   sameDay,
+  smartTime,
 } from "./chat-utils";
+import EmojiPicker from "./EmojiPicker";
 import FriendButton from "./FriendButton";
 import type { SidebarTab } from "./ChatSidebar";
 import RecommendButton from "./RecommendButton";
+import {
+  handleGetMessages,
+  handleSendFirstMessage,
+  handleSendMessage,
+} from "../actions";
 
 export interface ChatMessageData {
   id: string;
@@ -76,7 +82,7 @@ const tabs: { id: SidebarTab; label: string }[] = [
 ];
 
 const ChatScreen = ({
-  chats,
+  chats: initialChats,
   people,
   suggested,
   sentRecipientIds,
@@ -88,39 +94,67 @@ const ChatScreen = ({
   currentUserId,
   currentUsername,
 }: ChatScreenProps) => {
-  // WhatsApp model: everything is already in memory from the first load.
-  // Tapping a row just compares its id against the chats array.
+  // Everything below is in-memory after the first load.
+  const [chatList, setChatList] = useState<ChatData[]>(initialChats);
+  const [freshMessages, setFreshMessages] = useState<
+    Record<string, ChatMessageData[]>
+  >(() => Object.fromEntries(initialChats.map((c) => [c.id, c.messages])));
   const [activeChatId, setActiveChatId] = useState<string | null>(() =>
-    initialChatId && chats.some((chat) => chat.id === initialChatId)
+    initialChatId && initialChats.some((chat) => chat.id === initialChatId)
       ? initialChatId
-      : (chats[0]?.id ?? null),
+      : (initialChats[0]?.id ?? null),
   );
   const [tab, setTab] = useState<SidebarTab>(initialTab);
   const [query, setQuery] = useState(initialQuery);
+  // A person tapped in Suggested / Friends with no DM yet: the pane
+  // transforms, but nothing is created until the first message is sent.
+  const [pendingPeer, setPendingPeer] = useState<PeerData | null>(null);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
 
-  // Tapping Suggested only toggles the chip UI — no chat is created.
-  // The DM gets initialized on first message send (implemented later).
-  const [selectedRecommendation, setSelectedRecommendation] = useState<
-    string | null
-  >(null);
-  const allChats = chats;
+  const searchRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Ctrl+K / Cmd+K focuses search from anywhere.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const needle = query.trim().toLowerCase();
 
+  const messagesFor = (chatId: string): ChatMessageData[] =>
+    freshMessages[chatId] ??
+    chatList.find((chat) => chat.id === chatId)?.messages ??
+    [];
+
+  const memberNamesFor = (chatId: string): Record<string, string> => {
+    const names: Record<string, string> = {};
+    for (const member of chatList.find((chat) => chat.id === chatId)?.members ??
+      []) {
+      names[member.id] = member.username;
+    }
+    return names;
+  };
+
   const visibleChats = useMemo(
     () =>
-      allChats.filter((chat) => {
-        const last =
-          chat.messages.length > 0
-            ? chat.messages[chat.messages.length - 1]
-            : null;
+      chatList.filter((chat) => {
+        const messages = freshMessages[chat.id] ?? chat.messages;
+        const last = messages.length > 0 ? messages[messages.length - 1] : null;
         return (
           !needle ||
           chat.name.toLowerCase().includes(needle) ||
           (last?.content.toLowerCase().includes(needle) ?? false)
         );
       }),
-    [allChats, needle],
+    [chatList, freshMessages, needle],
   );
 
   const visiblePeople = useMemo(
@@ -134,63 +168,122 @@ const ChatScreen = ({
     [people, needle],
   );
 
-  const activeChat = allChats.find((chat) => chat.id === activeChatId) ?? null;
-
-  // Recommended tap = pure UI toggle on the chip. Nothing is created,
-  // nothing is added to the sidebar — creation happens on first send.
-  const openRecommendedChat = (userId: string) => {
-    setSelectedRecommendation((prev) => (prev === userId ? null : userId));
-  };
-  // Once a DM exists (including just-created ones), the person leaves Suggested.
+  // Once a DM exists, the person leaves Suggested.
   const visibleSuggested = useMemo(
     () =>
       suggested.filter(
         (person) =>
-          !allChats.some((chat) =>
+          !chatList.some((chat) =>
             chat.members.some((member) => member.id === person.userId),
           ),
       ),
-    [suggested, allChats],
+    [suggested, chatList],
   );
 
-  const activeMessages = useMemo(
-    () =>
-      activeChat
-        ? [...activeChat.messages].sort(
-            (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
-          )
-        : [],
-    [activeChat],
-  );
-  const memberNames = useMemo(() => {
-    const names: Record<string, string> = {};
-    if (activeChat) {
-      for (const member of activeChat.members) {
-        names[member.id] = member.username;
-      }
+  const openChat = (id: string) => {
+    setActiveChatId(id);
+    setPendingPeer(null);
+    handleGetMessages(id).then((messages) => {
+      if (messages.length === 0) return;
+      setFreshMessages((prev) => ({ ...prev, [id]: messages }));
+    });
+  };
+
+  // Tapping a person opens their existing chat when there is one —
+  // otherwise it stages a pending pane that creates nothing until send.
+  const openPerson = (peer: PeerData) => {
+    const existing = chatList.find((chat) =>
+      chat.members.some((member) => member.id === peer.userId),
+    );
+    if (existing) {
+      openChat(existing.id);
+      return;
     }
-    return names;
-  }, [activeChat]);
+    setPendingPeer((prev) => (prev?.userId === peer.userId ? null : peer));
+    setActiveChatId(null);
+  };
 
-  // Pending thread: tapping Suggested opens the message pane for that
-  // person with zero DB writes. The chat only comes into existence when
-  // the first message is sent (implemented later).
-  const pendingPerson =
-    selectedRecommendation !== null
-      ? (suggested.find((person) => person.userId === selectedRecommendation) ??
-        null)
-      : null;
-  const threadChat = pendingPerson
+  const insertEmoji = (emoji: string) => {
+    const el = inputRef.current;
+    if (!el) {
+      setDraft((d) => d + emoji);
+      return;
+    }
+    const start = el.selectionStart ?? draft.length;
+    const end = el.selectionEnd ?? draft.length;
+    const next = draft.slice(0, start) + emoji + draft.slice(end);
+    setDraft(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  };
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text || sending) return;
+    setSending(true);
+    try {
+      if (pendingPeer) {
+        const result = await handleSendFirstMessage(pendingPeer.userId, text);
+        if (result) {
+          const created: ChatData = {
+            id: result.chat.id,
+            index: chatList.length,
+            name: result.chat.name,
+            updatedAt: result.chat.updatedAt,
+            members: result.chat.members,
+            messages: [],
+          };
+          setChatList((prev) =>
+            prev.some((chat) => chat.id === created.id)
+              ? prev
+              : [created, ...prev],
+          );
+          setFreshMessages((prev) => ({
+            ...prev,
+            [result.chat.id]: [result.message],
+          }));
+          setPendingPeer(null);
+          setActiveChatId(result.chat.id);
+          setDraft("");
+        }
+      } else if (activeChatId) {
+        const message = await handleSendMessage(activeChatId, text);
+        if (message) {
+          setFreshMessages((prev) => ({
+            ...prev,
+            [activeChatId]: [...(prev[activeChatId] ?? []), message],
+          }));
+          setDraft("");
+        }
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const activeChat = chatList.find((chat) => chat.id === activeChatId) ?? null;
+  const threadChat = pendingPeer
     ? {
-        id: `pending:${pendingPerson.userId}`,
+        id: `pending:${pendingPeer.userId}`,
         index: -1,
-        name: pendingPerson.username,
+        name: pendingPeer.username,
       }
     : activeChat;
-  const threadMessages = pendingPerson ? [] : activeMessages;
-  const threadMemberNames = pendingPerson
-    ? { [pendingPerson.userId]: pendingPerson.username }
-    : memberNames;
+  const threadMessages = pendingPeer
+    ? []
+    : activeChatId
+      ? [...messagesFor(activeChatId)].sort(
+          (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
+        )
+      : [];
+  const threadMemberNames = pendingPeer
+    ? { [pendingPeer.userId]: pendingPeer.username }
+    : activeChatId
+      ? memberNamesFor(activeChatId)
+      : {};
+
   return (
     <div className="grid h-[calc(100dvh-12rem)] min-h-110 min-w-0 flex-1 gap-4 lg:grid-cols-[320px_1fr]">
       <aside
@@ -218,6 +311,7 @@ const ChatScreen = ({
             <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 transition-colors focus-within:border-brand/50 hover:border-white/20">
               <Search width={15} className="shrink-0 text-white/40" />
               <input
+                ref={searchRef}
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -226,6 +320,9 @@ const ChatScreen = ({
                 }
                 className="h-10 w-full bg-transparent text-sm text-white outline-none placeholder:text-white/30"
               />
+              <kbd className="hidden shrink-0 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-white/40 md:block">
+                Ctrl K
+              </kbd>
             </label>
           </div>
 
@@ -240,8 +337,15 @@ const ChatScreen = ({
                     <RecommendButton
                       person={person}
                       key={person.id}
-                      onRecommend={openRecommendedChat}
-                      active={selectedRecommendation === person.userId}
+                      onRecommend={() =>
+                        openPerson({
+                          id: person.id,
+                          userId: person.userId,
+                          username: person.username,
+                          email: person.email,
+                        })
+                      }
+                      active={pendingPeer?.userId === person.userId}
                     />
                   ))}
                 </div>
@@ -369,39 +473,48 @@ const ChatScreen = ({
                   ) : (
                     <div className="mt-2 space-y-1">
                       {friends.map((friend) => (
-                        <div
+                        <button
                           key={friend.id}
-                          className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 transition-colors hover:bg-white/5"
+                          type="button"
+                          onClick={() =>
+                            openPerson({
+                              id: friend.id,
+                              userId: friend.userId,
+                              username: friend.username,
+                              email: friend.email,
+                            })
+                          }
+                          title={`Chat with ${friend.username}`}
+                          className={
+                            pendingPeer?.userId === friend.userId
+                              ? "flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-brand/50 bg-brand/10 px-3 py-2.5 text-left"
+                              : "flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+                          }
                         >
                           <span
-                            title={`Chat with ${friend.username} (visual only)`}
-                            className="group flex w-full items-center gap-3 bg-transparent px-0 py-0 text-left"
+                            className={`grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(friend.username)}`}
                           >
-                            <span
-                              className={`grid size-11 shrink-0 place-items-center rounded-full bg-linear-to-br text-sm font-bold text-[#1a1333] ${avatarGradient(friend.username)}`}
-                            >
-                              {friend.username.charAt(0).toUpperCase()}
+                            {friend.username.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold tracking-[-0.01em] text-white">
+                              {friend.username}
                             </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold tracking-[-0.01em] text-white">
-                                {friend.username}
-                              </span>
-                              <span className="mt-0.5 block truncate text-xs text-white/45">
-                                {friend.email}
-                              </span>
-                            </span>
-                            <span className="flex shrink-0 items-center gap-2 text-white/40">
-                              {friend.since && (
-                                <span className="hidden text-[11px] xl:block">
-                                  {monthYear(new Date(friend.since))}
-                                </span>
-                              )}
-                              <span className="grid size-8 place-items-center rounded-full border border-white/15 bg-white/5 transition-colors group-hover:border-white/25">
-                                <MessageCircle width={15} />
-                              </span>
+                            <span className="mt-0.5 block truncate text-xs text-white/45">
+                              {friend.email}
                             </span>
                           </span>
-                        </div>
+                          <span className="flex shrink-0 items-center gap-2 text-white/40">
+                            {friend.since && (
+                              <span className="hidden text-[11px] xl:block">
+                                {monthYear(new Date(friend.since))}
+                              </span>
+                            )}
+                            <span className="grid size-8 place-items-center rounded-full border border-white/15 bg-white/5 transition-colors group-hover:border-white/25">
+                              <MessageCircle width={15} />
+                            </span>
+                          </span>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -425,19 +538,25 @@ const ChatScreen = ({
               </div>
             ) : (
               visibleChats.map((chat) => {
+                const messages = messagesFor(chat.id);
                 const last =
-                  chat.messages.length > 0
-                    ? chat.messages[chat.messages.length - 1]
-                    : null;
-                const isActive = chat.id === activeChatId;
+                  messages.length > 0 ? messages[messages.length - 1] : null;
+                const names: Record<string, string> = {};
+                for (const member of chat.members) {
+                  names[member.id] = member.username;
+                }
+                const lastSender = last
+                  ? last.creatorId === currentUserId
+                    ? "You"
+                    : (names[last.creatorId] ?? "Member")
+                  : null;
+                const isActive =
+                  chat.id === activeChatId && pendingPeer === null;
                 return (
                   <button
                     key={chat.id}
                     type="button"
-                    onClick={() => {
-                      setActiveChatId(chat.id);
-                      setSelectedRecommendation(null);
-                    }}
+                    onClick={() => openChat(chat.id)}
                     className={
                       isActive
                         ? "flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-left"
@@ -456,12 +575,14 @@ const ChatScreen = ({
                         </span>
                         {last && (
                           <span className="shrink-0 text-[11px] text-white/40">
-                            {messageTime(new Date(last.createdAt))}
+                            {smartTime(new Date(last.createdAt))}
                           </span>
                         )}
                       </span>
                       <span className="mt-0.5 block truncate text-[13px] text-white/50">
-                        {last ? last.content : "No messages yet"}
+                        {last && lastSender
+                          ? `${lastSender}: ${last.content}`
+                          : "No messages yet"}
                       </span>
                     </span>
                   </button>
@@ -481,12 +602,12 @@ const ChatScreen = ({
             </span>
             <div className="animate-fade-up delay-100">
               <p className="text-lg font-semibold tracking-[-0.02em] text-white">
-                {allChats.length > 0
+                {chatList.length > 0
                   ? "Select a conversation"
                   : "Your inbox is quiet"}
               </p>
               <p className="mx-auto mt-1.5 max-w-xs text-sm leading-relaxed text-white/50">
-                {allChats.length > 0
+                {chatList.length > 0
                   ? "Pick a chat from the list to read through your messages."
                   : "Your chats and messages will appear here once they exist."}
               </p>
@@ -499,7 +620,7 @@ const ChatScreen = ({
                 type="button"
                 onClick={() => {
                   setActiveChatId(null);
-                  setSelectedRecommendation(null);
+                  setPendingPeer(null);
                 }}
                 aria-label="Back to conversations"
                 className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:border-white/20 hover:text-white md:hidden"
@@ -515,12 +636,6 @@ const ChatScreen = ({
                 <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-white">
                   {threadChat.name}
                 </p>
-                <p className="flex items-center gap-1.5 text-xs text-white/45">
-                  <span className="animate-pulse-dot size-1.5 rounded-full bg-emerald-400" />
-                  {threadMessages.length === 1
-                    ? "1 message"
-                    : `${threadMessages.length} messages`}
-                </p>
               </div>
             </div>
 
@@ -531,7 +646,9 @@ const ChatScreen = ({
                     No messages yet
                   </p>
                   <p className="max-w-60 text-xs leading-relaxed text-white/45">
-                    This conversation exists, but nothing has been said here.
+                    {pendingPeer
+                      ? `Say hello to ${pendingPeer.username} — sending your first message starts the chat.`
+                      : "This conversation exists, but nothing has been said here."}
                   </p>
                 </div>
               ) : (
@@ -605,7 +722,7 @@ const ChatScreen = ({
                               className={
                                 isMine
                                   ? "w-fit rounded-2xl rounded-tr-md bg-brand px-4 py-2.5 text-sm leading-relaxed font-medium text-[#1a1333] shadow-lg shadow-brand/20"
-                                  : "w-fit rounded-2xl rounded-tl-md bg-white/10 px-4 py-2.5 text-sm leading-relaxed text-white/90"
+                                  : "w-fit rounded-2xl rounded-tl-md border border-white/10 bg-white/10 px-4 py-2.5 text-sm leading-relaxed text-white"
                               }
                             >
                               {message.content}
@@ -634,43 +751,42 @@ const ChatScreen = ({
               )}
             </div>
 
-            <div className="border-t border-white/10 px-4 py-3.5 sm:px-6">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                send();
+              }}
+              className="border-t border-white/10 px-4 py-3.5 sm:px-6"
+            >
               <div className="flex items-end gap-2">
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  className="grid size-12 shrink-0 cursor-default place-items-center rounded-2xl border border-white/10 bg-white/5 text-white/40"
+                <span
+                  title="Images land with image storage"
+                  className="grid size-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/5 text-white/25"
                 >
                   <ImagePlus width={18} />
-                </button>
+                </span>
                 <div className="flex flex-1 items-end gap-2 rounded-2xl border border-white/10 bg-white/5 px-2 py-2 transition-colors focus-within:border-brand/50">
                   <input
+                    ref={inputRef}
                     type="text"
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
                     placeholder={`Message ${threadChat.name}…`}
                     aria-label={`Message ${threadChat.name}`}
                     className="max-h-32 min-h-8 flex-1 bg-transparent px-2 text-sm text-white outline-none placeholder:text-white/30"
                   />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    aria-hidden="true"
-                    className="grid size-8 shrink-0 cursor-default place-items-center rounded-xl text-white/40"
-                  >
-                    <Smile width={18} />
-                  </button>
+                  <EmojiPicker onPick={insertEmoji} />
                 </div>
                 <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  title="Send (not wired yet)"
-                  className="grid size-12 shrink-0 cursor-default place-items-center rounded-2xl bg-brand text-[#1a1333] shadow-lg shadow-brand/25"
+                  type="submit"
+                  disabled={!draft.trim() || sending}
+                  aria-label="Send message"
+                  className="grid size-12 shrink-0 cursor-pointer place-items-center rounded-2xl bg-brand text-[#1a1333] shadow-lg shadow-brand/25 transition-all hover:bg-[#d6cbf3] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Send width={17} strokeWidth={2.5} />
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         )}
       </section>

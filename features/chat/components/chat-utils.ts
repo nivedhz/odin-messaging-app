@@ -35,6 +35,24 @@ export function messageTime(value: Date): string {
   });
 }
 
+// Sidebar-style stamp: time today, "Yesterday", weekday, else short date.
+export function smartTime(value: Date): string {
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round(
+    (+startOfDay(new Date()) - +startOfDay(value)) / 86400000,
+  );
+  if (diffDays <= 0) return messageTime(value);
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) {
+    return value.toLocaleDateString(undefined, { weekday: "short" });
+  }
+  return value.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function monthYear(value: Date): string {
   return value.toLocaleDateString(undefined, {
     month: "short",
