@@ -18,6 +18,12 @@ import {
   getOrCreateDirectChat,
   sendMessage,
 } from "./direct";
+import {
+  acceptFriendRequest,
+  cancelFriendRequest,
+  rejectFriendRequest,
+  sendFriendRequest,
+} from "./user";
 
 /** A message shaped for the client: identical to the db row but JSON-safe. */
 export interface SentMessageData {
@@ -125,6 +131,111 @@ export async function handleSendMessage(
 
   const message = await sendMessage(chatId, text, userId);
   return serializeMessage(message);
+}
+
+/**
+ * Sends a friend request. Guards: logged in, not yourself, no pending
+ * request already open in either direction, and not already friends.
+ * Returns the new request id so the UI can flip to Requested and later
+ * cancel exactly that row. Null = nothing to do (UI keeps current state).
+ */
+export async function handleSendFriendRequest(
+  recipientId: string,
+): Promise<{ requestId: string } | null> {
+  const userId = await currentUserId();
+  if (!userId || !recipientId || recipientId === userId) return null;
+
+  const existing = await prisma.friendship.findFirst({
+    where: {
+      OR: [
+        { requesterId: userId, recipientId },
+        { requesterId: recipientId, recipientId: userId },
+      ],
+    },
+    select: { id: true, status: true },
+  });
+  if (existing) return null;
+
+  const request = await sendFriendRequest(userId, recipientId);
+  return { requestId: request.id };
+}
+
+/**
+ * Cancels an outgoing pending request. Ownership-checked: only the
+ * requester can cancel, and only while it is still pending — otherwise
+ * the delete is a silent no-op that still returns success (idempotent).
+ */
+export async function handleCancelFriendRequest(
+  requestId: string,
+): Promise<{ success: boolean }> {
+  const userId = await currentUserId();
+  if (!userId || !requestId) return { success: false };
+
+  const existing = await prisma.friendship.findUnique({
+    where: { id: requestId },
+    select: { requesterId: true, status: true },
+  });
+  if (!existing || existing.requesterId !== userId) {
+    return { success: false };
+  }
+  if (existing.status !== "PENDING") return { success: true };
+
+  await cancelFriendRequest(requestId);
+  return { success: true };
+}
+
+/**
+ * Accepts an inbound pending request. Only the recipient can accept, and
+ * only while it is still pending. Returns success so the UI can move the
+ * row into the friends list instantly.
+ */
+export async function handleAcceptFriendRequest(
+  requestId: string,
+): Promise<{ success: boolean }> {
+  const userId = await currentUserId();
+  if (!userId || !requestId) return { success: false };
+
+  const existing = await prisma.friendship.findUnique({
+    where: { id: requestId },
+    select: { recipientId: true, status: true },
+  });
+  if (
+    !existing ||
+    existing.recipientId !== userId ||
+    existing.status !== "PENDING"
+  ) {
+    return { success: false };
+  }
+
+  await acceptFriendRequest(requestId);
+  return { success: true };
+}
+
+/**
+ * Declines an inbound pending request (deletes the row). Same recipient-
+ * only guard as accept. Returns success so the UI can drop the row
+ * instantly.
+ */
+export async function handleRejectFriendRequest(
+  requestId: string,
+): Promise<{ success: boolean }> {
+  const userId = await currentUserId();
+  if (!userId || !requestId) return { success: false };
+
+  const existing = await prisma.friendship.findUnique({
+    where: { id: requestId },
+    select: { recipientId: true, status: true },
+  });
+  if (
+    !existing ||
+    existing.recipientId !== userId ||
+    existing.status !== "PENDING"
+  ) {
+    return { success: false };
+  }
+
+  await rejectFriendRequest(requestId);
+  return { success: true };
 }
 
 /**
