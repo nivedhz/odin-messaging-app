@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LogoutButton from "./LogoutButton";
 import { Button } from "./ui/button";
 
 interface NavbarProps {
@@ -25,6 +26,8 @@ const Navbar = async ({ username }: NavbarProps) => {
               <span className="flex items-center gap-2 text-xs font-medium tracking-[-0.01em] text-white/50">
                 {username}
               </span>
+              <span aria-hidden="true" className="h-4 w-px bg-white/15" />
+              <LogoutButton />
             </div>
           ) : (
             <>
