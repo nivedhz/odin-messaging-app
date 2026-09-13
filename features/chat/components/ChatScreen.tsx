@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import ChatListItem from "./ChatListItem";
 import FriendsPanel from "./FriendsPanel";
@@ -115,6 +115,8 @@ const ChatScreen = ({
   const [sending, setSending] = useState(false);
   // Caret handle for emoji insertion (owned by the composer input).
   const inputRef = useRef<HTMLInputElement>(null);
+  // Scroll handle for the thread pane — snapped to bottom on open + send.
+  const threadRef = useRef<HTMLDivElement>(null);
 
   const needle = query.trim().toLowerCase();
 
@@ -312,6 +314,24 @@ const ChatScreen = ({
       ? memberNamesFor(activeChatId)
       : {};
 
+  // WhatsApp behavior: the thread always rests on the newest message.
+  // Snaps to bottom whenever the open thread changes or grows (open,
+  // switch, send, refresh) — nobody scrolls down by hand. A fresh thread
+  // lands instantly (no long swoosh through history); new arrivals glide.
+  const lastThreadKey = useRef<string | null>(null);
+  // Effect key: identity of the open thread (pending pane included).
+  const threadKey = pendingPeer ? `pending:${pendingPeer.userId}` : activeChatId;
+  useEffect(() => {
+    const el = threadRef.current;
+    if (!el) return;
+    const firstPaint = lastThreadKey.current !== threadKey;
+    lastThreadKey.current = threadKey;
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: firstPaint ? "auto" : "smooth",
+    });
+  }, [threadKey, threadMessages.length]);
+
   return (
     // Fills the leftover viewport height exactly (no calc, no min-height
     // floor that could overflow short screens) — both panes scroll inside.
@@ -418,8 +438,11 @@ const ChatScreen = ({
               }}
             />
             {/* Same min-h-0 contract as the sidebar: messages scroll,
-                the pane shell never grows. */}
-            <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+                the pane shell never grows. Ref lets us snap to bottom. */}
+            <div
+              ref={threadRef}
+              className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+            >
               <MessageList
                 messages={threadMessages}
                 currentUserId={currentUserId}
