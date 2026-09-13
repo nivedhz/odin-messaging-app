@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import EmojiPicker from "./EmojiPicker";
 
 /**
