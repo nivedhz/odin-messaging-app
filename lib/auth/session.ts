@@ -1,5 +1,6 @@
 "use server";
 
+import { SessionPayload } from "@/features/chat/types";
 import { JWTPayload, SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
@@ -46,7 +47,7 @@ export async function deleteSession(): Promise<void> {
   cookieStore.delete("session");
 }
 
-export async function getSession(): Promise<JWTPayload | null> {
+export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const session = cookieStore.get("session");
   if (!session) return null;

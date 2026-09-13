@@ -1,8 +1,6 @@
 import Navbar from "@/components/Navbar";
-import ChatSidebar, {
-  SidebarTab,
-} from "@/features/chat/components/ChatSidebar";
-import ChatThread from "@/features/chat/components/ChatThread";
+import ChatScreen from "@/features/chat/components/ChatScreen";
+import type { SidebarTab } from "@/features/chat/components/ChatSidebar";
 import {
   getAllUsers,
   getFriends,
@@ -24,8 +22,6 @@ const page = async ({
   if (!user) redirect("/login");
 
   const { chat: chatParam, q: qParam, tab: tabParam } = await searchParams;
-  const query = (qParam ?? "").trim();
-  const needle = query.toLowerCase();
   const tab: SidebarTab =
     tabParam === "people" || tabParam === "friends" ? tabParam : "chats";
 
@@ -33,54 +29,45 @@ const page = async ({
     (a, b) => +b.updatedAt - +a.updatedAt,
   );
 
-  const sidebarChats = byUpdatedDesc
-    .map((chat, index) => {
-      const others = chat.members
-        .filter((member) => member.id !== user.id)
-        .map((member) => member.username);
-      const name =
+  const chats = byUpdatedDesc.map((chat, index) => {
+    const others = chat.members
+      .filter((member) => member.id !== user.id)
+      .map((member) => member.username);
+    const thread = user.messages
+      .filter((message) => message.chatId === chat.id)
+      .sort((a, b) => +a.createdAt - +b.createdAt);
+    return {
+      id: chat.id,
+      index,
+      name:
         others.length === 0
           ? "Just you"
           : others.length <= 2
             ? others.join(", ")
-            : `${others.slice(0, 2).join(", ")} +${others.length - 2}`;
-      const thread = user.messages
-        .filter((message) => message.chatId === chat.id)
-        .sort((a, b) => +a.createdAt - +b.createdAt);
-      return {
-        id: chat.id,
-        index,
-        updatedAt: chat.updatedAt,
-        total: thread.length,
-        name,
-        lastMessage: thread.length
-          ? {
-              content: thread[thread.length - 1].content,
-              createdAt: thread[thread.length - 1].createdAt,
-            }
-          : null,
-      };
-    })
-    .filter(
-      (chat) =>
-        !needle ||
-        chat.name.toLowerCase().includes(needle) ||
-        chat.lastMessage?.content.toLowerCase().includes(needle),
-    );
+            : `${others.slice(0, 2).join(", ")} +${others.length - 2}`,
+      updatedAt: chat.updatedAt.toISOString(),
+      members: chat.members.map((member) => ({
+        id: member.id,
+        username: member.username,
+      })),
+      messages: thread.map((message) => ({
+        id: message.id,
+        content: message.content,
+        createdAt: message.createdAt.toISOString(),
+        creatorId: message.creatorId,
+      })),
+    };
+  });
+
+  const initialChatId =
+    chatParam && chats.some((chat) => chat.id === chatParam) ? chatParam : null;
 
   const allUsers = await getAllUsers(user.id);
-  const people = allUsers
-    .filter(
-      (person) =>
-        !needle ||
-        person.username.toLowerCase().includes(needle) ||
-        person.email.toLowerCase().includes(needle),
-    )
-    .map((person) => ({
-      id: person.id,
-      username: person.username,
-      email: person.email,
-    }));
+  const people = allUsers.map((person) => ({
+    id: person.id,
+    username: person.username,
+    email: person.email,
+  }));
 
   const [sentRequests, receivedRequests, friendships] = await Promise.all([
     getSentFriendRequests(user.id),
@@ -89,10 +76,7 @@ const page = async ({
   ]);
 
   const userById = new Map(allUsers.map((person) => [person.id, person]));
-  const sent = sentRequests.map((request) => ({
-    recipientId: request.recipientId,
-    requestId: request.id,
-  }));
+  const sentRecipientIds = sentRequests.map((request) => request.recipientId);
   const received = receivedRequests.map((request) => {
     const sender = userById.get(request.requesterId);
     return {
@@ -124,84 +108,23 @@ const page = async ({
     .filter((friend) => !chattedIds.has(friend.userId))
     .slice(0, 8);
 
-  const chatMeta = new Map(
-    byUpdatedDesc.map((chat, index) => {
-      const others = chat.members
-        .filter((member) => member.id !== user.id)
-        .map((member) => member.username);
-      return [
-        chat.id,
-        {
-          id: chat.id,
-          index,
-          name:
-            others.length === 0
-              ? "Just you"
-              : others.length <= 2
-                ? others.join(", ")
-                : `${others.slice(0, 2).join(", ")} +${others.length - 2}`,
-          members: chat.members,
-        },
-      ] as const;
-    }),
-  );
-
-  const activeMeta = (chatParam && chatMeta.get(chatParam)) || null;
-  const activeChat = activeMeta
-    ? {
-        id: activeMeta.id,
-        index: activeMeta.index,
-        total: user.messages.filter(
-          (message) => message.chatId === activeMeta.id,
-        ).length,
-        name: activeMeta.name,
-      }
-    : null;
-  const memberNames: Record<string, string> = {};
-  if (activeMeta) {
-    for (const member of activeMeta.members) {
-      memberNames[member.id] = member.username;
-    }
-  }
-  const threadMessages = activeChat
-    ? user.messages
-        .filter((message) => message.chatId === activeChat.id)
-        .sort((a, b) => +a.createdAt - +b.createdAt)
-    : [];
-
   return (
     <div className="flex w-full flex-1 flex-col">
       <Navbar username={user.username} />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-6 sm:px-6">
-        <div className="grid h-[calc(100dvh-12rem)] min-h-110 min-w-0 flex-1 gap-4 lg:grid-cols-[320px_1fr]">
-          <aside
-            className={`${activeChat ? "hidden" : "flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:flex`}
-          >
-            <ChatSidebar
-              chats={sidebarChats}
-              users={people}
-              suggested={suggested}
-              sentRequests={sent}
-              receivedRequests={received}
-              friends={friends}
-              tab={tab}
-              activeChatId={activeChat?.id ?? null}
-              query={query}
-              username={user.username}
-            />
-          </aside>
-          <section
-            className={`${activeChat ? "flex" : "hidden"} min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:flex`}
-          >
-            <ChatThread
-              chat={activeChat}
-              messages={threadMessages}
-              currentUserId={user.id}
-              memberNames={memberNames}
-              hasChats={user.chats.length > 0}
-            />
-          </section>
-        </div>
+        <ChatScreen
+          chats={chats}
+          people={people}
+          suggested={suggested}
+          sentRecipientIds={sentRecipientIds}
+          receivedRequests={received}
+          friends={friends}
+          initialTab={tab}
+          initialChatId={initialChatId}
+          initialQuery={(qParam ?? "").trim()}
+          currentUserId={user.id}
+          currentUsername={user.username}
+        />
       </main>
     </div>
   );

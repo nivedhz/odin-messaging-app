@@ -8,7 +8,11 @@ export async function getUser(userId: string) {
     include: {
       chats: {
         include: {
-          members: true,
+          members: {
+            omit: {
+              password: true,
+            },
+          },
           messages: true,
         },
       },
