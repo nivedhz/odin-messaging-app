@@ -27,7 +27,7 @@ export const login = async (formData: LoginData) => {
   if (!passwordMatch) {
     return {
       success: false,
-      message: "Incorrect username of password",
+      message: "Incorrect username or password",
     };
   }
 
