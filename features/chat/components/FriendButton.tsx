@@ -1,3 +1,11 @@
+/**
+ * FriendButton — the Add / Requested pill on each row of the People list.
+ *
+ * Deliberately inert: this is pure UI with no click behavior and no server
+ * call. `initialRequested` (seeded from the sent-requests read) picks which
+ * of the two visual states renders. Wiring the real send/cancel happens
+ * elsewhere; this file must stay free of actions.
+ */
 import { Check, UserPlus } from "lucide-react";
 
 const FriendButton = ({

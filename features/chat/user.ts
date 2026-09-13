@@ -13,7 +13,9 @@ export async function getUser(userId: string) {
               password: true,
             },
           },
-          messages: true,
+          messages: {
+            orderBy: { updatedAt: "asc" },
+          },
         },
       },
       messages: true,

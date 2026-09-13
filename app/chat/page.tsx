@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import ChatScreen from "@/features/chat/components/ChatScreen";
-import type { SidebarTab } from "@/features/chat/components/ChatSidebar";
+// SidebarTab lives with the other shared chat shapes in chat-types.
+import type { SidebarTab } from "@/features/chat/components/chat-types";
 import {
   getAllUsers,
   getFriends,
@@ -16,26 +17,31 @@ const page = async ({
 }: {
   searchParams: Promise<{ chat?: string; q?: string; tab?: string }>;
 }) => {
+  // Get and validate session and user
   const session = await getSession();
   if (!session?.userId) redirect("/login");
   const user = await getUser(session.userId as string);
   if (!user) redirect("/login");
 
+  // Get searchParams
   const { chat: chatParam, q: qParam, tab: tabParam } = await searchParams;
+  // Get the tab and default to "chats"
   const tab: SidebarTab =
     tabParam === "people" || tabParam === "friends" ? tabParam : "chats";
 
+  // sort chat by updatedAt latest time
   const byUpdatedDesc = [...user.chats].sort(
     (a, b) => +b.updatedAt - +a.updatedAt,
   );
 
+  // Map ordered chats (chat and index)
   const chats = byUpdatedDesc.map((chat, index) => {
+    // Get chat members and filter them to avoid user and map them to only have username
     const others = chat.members
       .filter((member) => member.id !== user.id)
       .map((member) => member.username);
-    const thread = user.messages
-      .filter((message) => message.chatId === chat.id)
-      .sort((a, b) => +a.createdAt - +b.createdAt);
+
+    // return chat id, index, name (if length === 0 then Just you if length <= 2 then others else others + others.length - 2), updatedAt, members, messages
     return {
       id: chat.id,
       index,
@@ -50,7 +56,7 @@ const page = async ({
         id: member.id,
         username: member.username,
       })),
-      messages: thread.map((message) => ({
+      messages: chat.messages.map((message) => ({
         id: message.id,
         content: message.content,
         createdAt: message.createdAt.toISOString(),
@@ -62,6 +68,7 @@ const page = async ({
   const initialChatId =
     chatParam && chats.some((chat) => chat.id === chatParam) ? chatParam : null;
 
+  // Design people by id username and email
   const allUsers = await getAllUsers(user.id);
   const people = allUsers.map((person) => ({
     id: person.id,
@@ -69,6 +76,7 @@ const page = async ({
     email: person.email,
   }));
 
+  // Get all types of requests
   const [sentRequests, receivedRequests, friendships] = await Promise.all([
     getSentFriendRequests(user.id),
     getReceivedFriendRequests(user.id),

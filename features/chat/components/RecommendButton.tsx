@@ -1,11 +1,19 @@
+/**
+ * RecommendButton — one tappable avatar chip in the Suggested strip.
+ *
+ * A client component because the tap is stateful UI: it calls `onRecommend`
+ * (owned by ChatScreen) which stages a pending thread without creating
+ * anything in the db. `active` drives the brand-ring selection indicator.
+ */
 "use client";
 
 import { avatarGradient } from "./chat-utils";
-import type { PeerData } from "./ChatScreen";
+import type { PeerData } from "./chat-types";
 
 interface Props {
   person: PeerData;
-  onRecommend: (userId: string) => void;
+  /** Fired on tap — the parent decides what staging a thread means. */
+  onRecommend: () => void;
   active?: boolean;
 }
 
@@ -13,7 +21,7 @@ const RecommendButton = ({ person, onRecommend, active = false }: Props) => {
   return (
     <button
       type="button"
-      onClick={() => onRecommend(person.userId)}
+      onClick={onRecommend}
       title={`Chat with ${person.username}`}
       aria-pressed={active}
       className={

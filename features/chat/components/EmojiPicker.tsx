@@ -108,6 +108,17 @@ const CATEGORIES: { label: string; emojis: string[] }[] = [
   },
 ];
 
+/**
+ * EmojiPicker — smile trigger + floating emoji panel inside the composer.
+ *
+ * No emoji library is installed: the grid is a hand-curated constant below,
+ * which keeps the bundle at zero extra cost. The panel is absolutely
+ * positioned (NOT portalled) because the chat pane's backdrop-blur traps
+ * fixed-position popovers and clips them — inline avoids that entirely.
+ * Insertion at the caret is the parent's job via `onPick`; this only
+ * reports which emoji was tapped, then closes. Escape / outside-click /
+ * toggle all close the panel; listeners are attached only while open.
+ */
 const EmojiPicker = ({ onPick }: { onPick: (emoji: string) => void }) => {
   const [category, setCategory] = useState(0);
   const [open, setOpen] = useState(false);
