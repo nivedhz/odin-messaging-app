@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -24,7 +24,6 @@ import {
 import FriendButton from "./FriendButton";
 import type { SidebarTab } from "./ChatSidebar";
 import RecommendButton from "./RecommendButton";
-import { handleOpenRecommendedChat } from "../actions";
 
 export interface ChatMessageData {
   id: string;
@@ -98,16 +97,13 @@ const ChatScreen = ({
   );
   const [tab, setTab] = useState<SidebarTab>(initialTab);
   const [query, setQuery] = useState(initialQuery);
-  const [openingId, setOpeningId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
 
-  // Chats created mid-session (e.g. tapping Suggested) merge into the
-  // already-loaded array — no refetch, switching stays stateful.
-  const [createdChats, setCreatedChats] = useState<ChatData[]>([]);
-  const allChats = useMemo(
-    () => [...createdChats, ...chats],
-    [createdChats, chats],
-  );
+  // Tapping Suggested only toggles the chip UI — no chat is created.
+  // The DM gets initialized on first message send (implemented later).
+  const [selectedRecommendation, setSelectedRecommendation] = useState<
+    string | null
+  >(null);
+  const allChats = chats;
 
   const needle = query.trim().toLowerCase();
 
@@ -140,42 +136,10 @@ const ChatScreen = ({
 
   const activeChat = allChats.find((chat) => chat.id === activeChatId) ?? null;
 
-  // Tapping Suggested first ensures the DM exists (created if needed),
-  // then merges it into the loaded array and makes it active — the
-  // sidebar shows it instantly with zero refetch.
+  // Recommended tap = pure UI toggle on the chip. Nothing is created,
+  // nothing is added to the sidebar — creation happens on first send.
   const openRecommendedChat = (userId: string) => {
-    const existing = allChats.find((chat) =>
-      chat.members.some((member) => member.id === userId),
-    );
-    if (existing) {
-      setActiveChatId(existing.id);
-      return;
-    }
-    if (openingId) return;
-    setOpeningId(userId);
-    startTransition(async () => {
-      const result = await handleOpenRecommendedChat(userId);
-      if (result) {
-        setCreatedChats((prev) =>
-          prev.some((chat) => chat.id === result.id) ||
-          allChats.some((chat) => chat.id === result.id)
-            ? prev
-            : [
-                {
-                  id: result.id,
-                  index: allChats.length,
-                  name: result.name,
-                  updatedAt: result.updatedAt,
-                  members: result.members,
-                  messages: [],
-                },
-                ...prev,
-              ],
-        );
-        setActiveChatId(result.id);
-      }
-      setOpeningId(null);
-    });
+    setSelectedRecommendation((prev) => (prev === userId ? null : userId));
   };
   // Once a DM exists (including just-created ones), the person leaves Suggested.
   const visibleSuggested = useMemo(
@@ -207,10 +171,30 @@ const ChatScreen = ({
     }
     return names;
   }, [activeChat]);
+
+  // Pending thread: tapping Suggested opens the message pane for that
+  // person with zero DB writes. The chat only comes into existence when
+  // the first message is sent (implemented later).
+  const pendingPerson =
+    selectedRecommendation !== null
+      ? (suggested.find((person) => person.userId === selectedRecommendation) ??
+        null)
+      : null;
+  const threadChat = pendingPerson
+    ? {
+        id: `pending:${pendingPerson.userId}`,
+        index: -1,
+        name: pendingPerson.username,
+      }
+    : activeChat;
+  const threadMessages = pendingPerson ? [] : activeMessages;
+  const threadMemberNames = pendingPerson
+    ? { [pendingPerson.userId]: pendingPerson.username }
+    : memberNames;
   return (
     <div className="grid h-[calc(100dvh-12rem)] min-h-110 min-w-0 flex-1 gap-4 lg:grid-cols-[320px_1fr]">
       <aside
-        className={`${activeChat ? "hidden" : "flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:flex`}
+        className={`${threadChat ? "hidden" : "flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:flex`}
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 p-1 mx-4 mt-4">
@@ -251,13 +235,13 @@ const ChatScreen = ({
                 <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
                   Suggested
                 </p>
-                <div className="scroll-slim flex gap-1 overflow-x-auto pb-1">
+                <div className="scroll-slim flex gap-3 overflow-x-auto px-1 pb-1">
                   {visibleSuggested.map((person) => (
                     <RecommendButton
                       person={person}
                       key={person.id}
                       onRecommend={openRecommendedChat}
-                      disabled={openingId === person.userId}
+                      active={selectedRecommendation === person.userId}
                     />
                   ))}
                 </div>
@@ -450,7 +434,10 @@ const ChatScreen = ({
                   <button
                     key={chat.id}
                     type="button"
-                    onClick={() => setActiveChatId(chat.id)}
+                    onClick={() => {
+                      setActiveChatId(chat.id);
+                      setSelectedRecommendation(null);
+                    }}
                     className={
                       isActive
                         ? "flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-left"
@@ -485,9 +472,9 @@ const ChatScreen = ({
         </div>
       </aside>
       <section
-        className={`${activeChat ? "flex" : "hidden"} min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:flex`}
+        className={`${threadChat ? "flex" : "hidden"} min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:flex`}
       >
-        {!activeChat ? (
+        {!threadChat ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
             <span className="animate-fade-up grid size-14 place-items-center rounded-3xl border border-white/10 bg-white/5">
               <MessagesSquare width={24} className="text-brand" />
@@ -510,32 +497,35 @@ const ChatScreen = ({
             <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3.5 sm:px-6">
               <button
                 type="button"
-                onClick={() => setActiveChatId(null)}
+                onClick={() => {
+                  setActiveChatId(null);
+                  setSelectedRecommendation(null);
+                }}
                 aria-label="Back to conversations"
                 className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:border-white/20 hover:text-white md:hidden"
               >
                 <ArrowLeft width={16} />
               </button>
               <span
-                className={`grid size-10 shrink-0 place-items-center rounded-full bg-linear-to-br text-xs font-bold text-[#1a1333] ${avatarGradient(activeChat.name || activeChat.id)}`}
+                className={`grid size-10 shrink-0 place-items-center rounded-full bg-linear-to-br text-xs font-bold text-[#1a1333] ${avatarGradient(threadChat.name || threadChat.id)}`}
               >
-                {activeChat.name.charAt(0).toUpperCase()}
+                {threadChat.name.charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold tracking-[-0.01em] text-white">
-                  {activeChat.name}
+                  {threadChat.name}
                 </p>
                 <p className="flex items-center gap-1.5 text-xs text-white/45">
                   <span className="animate-pulse-dot size-1.5 rounded-full bg-emerald-400" />
-                  {activeMessages.length === 1
+                  {threadMessages.length === 1
                     ? "1 message"
-                    : `${activeMessages.length} messages`}
+                    : `${threadMessages.length} messages`}
                 </p>
               </div>
             </div>
 
             <div className="scroll-slim flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-              {activeMessages.length === 0 ? (
+              {threadMessages.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
                   <p className="text-sm font-semibold text-white">
                     No messages yet
@@ -546,21 +536,21 @@ const ChatScreen = ({
                 </div>
               ) : (
                 <div className="flex flex-col gap-1">
-                  {activeMessages.map((message, i) => {
+                  {threadMessages.map((message, i) => {
                     const createdAt = new Date(message.createdAt);
                     const prev =
                       i > 0
                         ? {
-                            ...activeMessages[i - 1],
+                            ...threadMessages[i - 1],
                             createdAt: new Date(
-                              activeMessages[i - 1].createdAt,
+                              threadMessages[i - 1].createdAt,
                             ),
                           }
                         : null;
                     const isMine = message.creatorId === currentUserId;
                     const senderName = isMine
                       ? "You"
-                      : (memberNames[message.creatorId] ?? "Member");
+                      : (threadMemberNames[message.creatorId] ?? "Member");
                     const startsGroup =
                       !prev ||
                       prev.creatorId !== message.creatorId ||
@@ -627,8 +617,8 @@ const ChatScreen = ({
                               </span>
                             )}
                             {!isMine &&
-                              (i === activeMessages.length - 1 ||
-                                activeMessages[i + 1].creatorId !==
+                              (i === threadMessages.length - 1 ||
+                                threadMessages[i + 1].creatorId !==
                                   message.creatorId) && (
                                 <span className="mt-1 text-[10px] text-white/35">
                                   {messageTime(createdAt)}
@@ -657,8 +647,8 @@ const ChatScreen = ({
                 <div className="flex flex-1 items-end gap-2 rounded-2xl border border-white/10 bg-white/5 px-2 py-2 transition-colors focus-within:border-brand/50">
                   <input
                     type="text"
-                    placeholder={`Message ${activeChat.name}…`}
-                    aria-label={`Message ${activeChat.name}`}
+                    placeholder={`Message ${threadChat.name}…`}
+                    aria-label={`Message ${threadChat.name}`}
                     className="max-h-32 min-h-8 flex-1 bg-transparent px-2 text-sm text-white outline-none placeholder:text-white/30"
                   />
                   <button

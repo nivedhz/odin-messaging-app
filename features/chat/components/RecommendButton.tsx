@@ -6,24 +6,34 @@ import type { PeerData } from "./ChatScreen";
 interface Props {
   person: PeerData;
   onRecommend: (userId: string) => void;
-  disabled?: boolean;
+  active?: boolean;
 }
 
-const RecommendButton = ({ person, onRecommend, disabled = false }: Props) => {
+const RecommendButton = ({ person, onRecommend, active = false }: Props) => {
   return (
     <button
       type="button"
       onClick={() => onRecommend(person.userId)}
-      disabled={disabled}
       title={`Chat with ${person.username}`}
-      className="shrink-0 cursor-pointer rounded-lg border border-transparent flex flex-col justify-center items-center disabled:cursor-wait disabled:opacity-60"
+      aria-pressed={active}
+      className={
+        active
+          ? "shrink-0 cursor-pointer rounded-2xl border border-brand/60 bg-brand/10 flex flex-col justify-center items-center px-4 py-3"
+          : "shrink-0 cursor-pointer rounded-2xl border border-transparent flex flex-col justify-center items-center px-4 py-3"
+      }
     >
       <span
-        className={`grid size-12 place-items-center rounded-full bg-linear-to-br text-base font-bold text-[#1a1333] ring-2 ring-transparent transition-all group-hover:ring-brand/50 ${avatarGradient(person.username)}`}
+        className={`grid size-12 place-items-center rounded-full bg-linear-to-br text-base font-bold text-[#1a1333] ring-2 transition-all ${active ? "ring-brand" : "ring-transparent"} ${avatarGradient(person.username)}`}
       >
         {person.username.charAt(0).toUpperCase()}
       </span>
-      <span className="w-full truncate text-center text-[11px] font-medium text-white/60">
+      <span
+        className={
+          active
+            ? "w-full truncate text-center text-[11px] font-semibold text-white"
+            : "w-full truncate text-center text-[11px] font-medium text-white/60"
+        }
+      >
         {person.username}
       </span>
     </button>
