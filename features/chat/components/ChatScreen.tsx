@@ -52,8 +52,8 @@ interface ChatScreenProps {
   people: PeopleData[];
   /** Friends without a DM yet, for the Suggested rail. */
   suggested: PeerData[];
-  /** Recipient ids with a pending outgoing request (pill state). */
-  sentRecipientIds: string[];
+  /** Outgoing pending requests — seeds pill state + cancel targets. */
+  sentRequests: { recipientId: string; requestId: string }[];
   /** Pending inbound requests with sender profiles. */
   receivedRequests: PeerData[];
   /** Accepted friends. */
@@ -74,7 +74,7 @@ const ChatScreen = ({
   chats: initialChats,
   people,
   suggested,
-  sentRecipientIds,
+  sentRequests,
   receivedRequests,
   friends,
   initialTab,
@@ -308,7 +308,9 @@ const ChatScreen = ({
       : {};
 
   return (
-    <div className="grid h-[calc(100dvh-12rem)] min-h-110 min-w-0 flex-1 gap-4 lg:grid-cols-[320px_1fr]">
+    // Fills the leftover viewport height exactly (no calc, no min-height
+    // floor that could overflow short screens) — both panes scroll inside.
+    <div className="grid min-h-0 min-w-0 flex-1 gap-4 lg:grid-cols-[320px_1fr]">
       {/* Left pane: hidden on mobile while a thread is open. */}
       <aside
         className={`${threadChat ? "hidden" : "flex"} min-h-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-2xl shadow-black/40 backdrop-blur-2xl md:flex`}
@@ -323,7 +325,10 @@ const ChatScreen = ({
             }
           />
 
-          <div className="scroll-slim mt-3 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
+          {/* min-h-0 is load-bearing: without it flex items refuse to
+              shrink below content height and long lists would stretch the
+              fixed-height shell instead of scrolling inside it. */}
+          <div className="scroll-slim mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-4">
             {tab === "chats" && visibleSuggested.length > 0 && !needle && (
               <SuggestedStrip
                 people={visibleSuggested}
@@ -341,7 +346,7 @@ const ChatScreen = ({
             {tab === "people" ? (
               <PeopleList
                 people={visiblePeople}
-                sentRecipientIds={sentRecipientIds}
+                sentRequests={sentRequests}
                 query={query}
               />
             ) : tab === "friends" ? (
@@ -407,7 +412,9 @@ const ChatScreen = ({
                 setPendingPeer(null);
               }}
             />
-            <div className="scroll-slim flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+            {/* Same min-h-0 contract as the sidebar: messages scroll,
+                the pane shell never grows. */}
+            <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
               <MessageList
                 messages={threadMessages}
                 currentUserId={currentUserId}

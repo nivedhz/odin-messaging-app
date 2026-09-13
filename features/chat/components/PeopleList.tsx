@@ -8,20 +8,20 @@ import type { PeopleData } from "./chat-types";
 /**
  * PeopleList — every discoverable user with an Add / Requested pill.
  *
- * Rows are display-only: the pill is intentionally inert UI (no click
- * behavior, no server call) seeded from the sent-requests read. Search
- * filtering happens in the parent against this same already-loaded array.
+ * The pill is a live toggle (see FriendButton); this list only resolves
+ * each row's initial state from the sent-requests read. Search filtering
+ * happens in the parent against this same already-loaded array.
  */
 interface PeopleListProps {
   /** Filtered people to render (empty → the empty-state block below). */
   people: PeopleData[];
-  /** Recipient ids with a pending outgoing request (drives pill state). */
-  sentRecipientIds: string[];
+  /** Outgoing pending requests — seeds each pill's state + cancel target. */
+  sentRequests: { recipientId: string; requestId: string }[];
   /** Raw search text, echoed back only inside the "no matches" copy. */
   query: string;
 }
 
-const PeopleList = ({ people, sentRecipientIds, query }: PeopleListProps) => {
+const PeopleList = ({ people, sentRequests, query }: PeopleListProps) => {
   if (people.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 px-4 py-14 text-center">
@@ -65,7 +65,15 @@ const PeopleList = ({ people, sentRecipientIds, query }: PeopleListProps) => {
           </span>
           <FriendButton
             username={person.username}
-            initialRequested={sentRecipientIds.includes(person.id)}
+            recipientId={person.id}
+            initialRequested={sentRequests.some(
+              (request) => request.recipientId === person.id,
+            )}
+            initialRequestId={
+              sentRequests.find(
+                (request) => request.recipientId === person.id,
+              )?.requestId ?? null
+            }
           />
         </div>
       ))}

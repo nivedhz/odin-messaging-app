@@ -1,7 +1,9 @@
 "use client";
 
-import { Check, MessageCircle, Users, X } from "lucide-react";
+import { useState } from "react";
+import { MessageCircle, Users } from "lucide-react";
 import { avatarGradient, monthYear } from "./chat-utils";
+import FriendRequestActions from "./FriendRequestActions";
 import type { PeerData } from "./chat-types";
 
 /**
@@ -9,8 +11,9 @@ import type { PeerData } from "./chat-types";
  * below. Tapping a friend row stages that person as a pending thread
  * (`onChatWith`); like Suggested, nothing is created until first send.
  *
- * Accept / decline affordances are deliberately inert visuals for now.
- * `onFindPeople` jumps the parent back to the People tab.
+ * Accept / decline are fully working: confirming moves the row into the
+ * friends list (or drops it) instantly via local `decided` state — no
+ * refetch needed. `onFindPeople` jumps the parent back to the People tab.
  */
 interface FriendsPanelProps {
   /** Pending inbound requests (each carries the sender's profile). */
@@ -32,20 +35,40 @@ const FriendsPanel = ({
   onChatWith,
   onFindPeople,
 }: FriendsPanelProps) => {
+  // Locally decided request ids: "accepted" rows graduate into the friends
+  // list below, "declined" rows vanish. Keyed by request id so the server
+  // props stay the source of truth on next full load.
+  const [decided, setDecided] = useState<Record<string, "accepted" | "declined">>({});
+
+  // Still-pending rows: anything the user hasn't ruled on this session.
+  const openRequests = receivedRequests.filter(
+    (request) => !decided[request.id],
+  );
+  // Accepted senders appear as friends immediately (same PeerData shape).
+  const justAccepted: PeerData[] = receivedRequests
+    .filter((request) => decided[request.id] === "accepted")
+    .map((request) => ({
+      id: request.id,
+      userId: request.userId,
+      username: request.username,
+      email: request.email,
+    }));
+  const allFriends = [...justAccepted, ...friends];
+
   return (
     <div className="flex flex-col gap-5 px-1 pb-4">
       <div>
         <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
-          Requests · {receivedRequests.length}
+          Requests · {openRequests.length}
         </p>
-        {receivedRequests.length === 0 ? (
+        {openRequests.length === 0 ? (
           <p className="px-2 pt-2 text-xs leading-relaxed text-white/45">
             No pending requests. When someone adds you, you can accept or
             decline here.
           </p>
         ) : (
           <div className="mt-2 space-y-1">
-            {receivedRequests.map((request) => (
+            {openRequests.map((request) => (
               <div
                 key={request.id}
                 className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5"
@@ -63,21 +86,14 @@ const FriendsPanel = ({
                     Wants to be friends
                   </span>
                 </span>
-                {/* Inert accept / decline affordances (no handlers yet). */}
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <span
-                    title={`Accept ${request.username} (visual only)`}
-                    className="grid size-8 place-items-center rounded-full bg-brand text-[#1a1333]"
-                  >
-                    <Check width={15} />
-                  </span>
-                  <span
-                    title={`Decline ${request.username} (visual only)`}
-                    className="grid size-8 place-items-center rounded-full border border-white/15 bg-white/5 text-white/60"
-                  >
-                    <X width={15} />
-                  </span>
-                </span>
+                {/* Working accept / decline — parent updates on confirm. */}
+                <FriendRequestActions
+                  requestId={request.id}
+                  username={request.username}
+                  onDecided={(outcome) =>
+                    setDecided((prev) => ({ ...prev, [request.id]: outcome }))
+                  }
+                />
               </div>
             ))}
           </div>
@@ -85,9 +101,9 @@ const FriendsPanel = ({
       </div>
       <div>
         <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
-          Friends · {friends.length}
+          Friends · {allFriends.length}
         </p>
-        {friends.length === 0 ? (
+        {allFriends.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
             <span className="grid size-12 place-items-center rounded-2xl border border-white/10 bg-white/5">
               <Users width={20} className="text-white/40" />
@@ -109,7 +125,7 @@ const FriendsPanel = ({
           </div>
         ) : (
           <div className="mt-2 space-y-1">
-            {friends.map((friend) => (
+            {allFriends.map((friend) => (
               <button
                 key={friend.id}
                 type="button"

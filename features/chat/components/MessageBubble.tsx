@@ -78,8 +78,8 @@ const MessageBubble = ({
             title={messageTime(createdAtDate)}
             className={
               isMine
-                ? "w-fit rounded-2xl rounded-tr-md bg-brand px-4 py-2.5 text-sm leading-relaxed font-medium text-[#1a1333] shadow-lg shadow-brand/20"
-                : "w-fit rounded-2xl rounded-tl-md border border-white/10 bg-white/10 px-4 py-2.5 text-sm leading-relaxed text-white"
+                ? "w-fit max-w-full rounded-2xl rounded-tr-md bg-brand px-4 py-2.5 text-sm leading-relaxed font-medium break-words text-[#1a1333] shadow-lg shadow-brand/20"
+                : "w-fit max-w-full rounded-2xl rounded-tl-md border border-white/10 bg-white/10 px-4 py-2.5 text-sm leading-relaxed break-words text-white"
             }
           >
             {content}
