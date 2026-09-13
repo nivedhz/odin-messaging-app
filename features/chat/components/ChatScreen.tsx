@@ -91,9 +91,20 @@ const ChatScreen = ({
   >(() => Object.fromEntries(initialChats.map((c) => [c.id, c.messages])));
   // The entire switching mechanism: one id, compared against `chatList`.
   const [activeChatId, setActiveChatId] = useState<string | null>(() =>
-    initialChatId && initialChats.some((chat) => chat.id === initialChatId)
+    initialChatId &&
+    initialChats
+      .sort(
+        (a, b) =>
+          +new Date(
+            lastActivity(freshMessages[b.id] ?? b.messages, b.updatedAt),
+          ) -
+          +new Date(
+            lastActivity(freshMessages[a.id] ?? a.messages, a.updatedAt),
+          ),
+      )
+      .some((chat) => chat.id === initialChatId)
       ? initialChatId
-      : (initialChats[0]?.id ?? null),
+      : (initialChats[2]?.id ?? null),
   );
   const [tab, setTab] = useState<SidebarTab>(initialTab);
   const [query, setQuery] = useState(initialQuery);
@@ -144,16 +155,10 @@ const ChatScreen = ({
         .sort(
           (a, b) =>
             +new Date(
-              lastActivity(
-                freshMessages[b.id] ?? b.messages,
-                b.updatedAt,
-              ),
+              lastActivity(freshMessages[b.id] ?? b.messages, b.updatedAt),
             ) -
             +new Date(
-              lastActivity(
-                freshMessages[a.id] ?? a.messages,
-                a.updatedAt,
-              ),
+              lastActivity(freshMessages[a.id] ?? a.messages, a.updatedAt),
             ),
         ),
     [chatList, freshMessages, needle],
